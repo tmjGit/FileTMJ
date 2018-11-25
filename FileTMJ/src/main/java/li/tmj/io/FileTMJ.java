@@ -22,9 +22,28 @@ public class FileTMJ {
 	private Path resourceForkPath;
 	
 	public static void main(String[] args) throws IOException {
-		String source1="/Volumes/Users/Public/Documents/1 mit RF.textClipping";
+		String source1;
+		Path path;
+		source1="\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner\\1 mit RF.textClipping"; //-> exists = false!
+//				path=Paths.get(source1);
+//				System.out.println(path.getFileSystem().getClass().getSimpleName());	//WindowsFileSystem "MacOSXFileSystem"// Unter Windows per Samba angebundene Laufwerke werden als WindowsFileSystem angezeigt!
+//				System.out.println(Files.getFileStore(path));//iM (z:)
+		source1="z:\\1 mit RF.textClipping";
+//		String source1="\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner";
+//		String source1="/Users/Public/Documents/x";
+//		String source1="/Volumes/Users/Public/Documents/1 mit RF.textClipping";
+		 path=Paths.get(source1);
+		System.out.println(path.getFileSystem().getClass().getSimpleName());	//WindowsFileSystem "MacOSXFileSystem"// Unter Windows per Samba angebundene Laufwerke werden als WindowsFileSystem angezeigt!
+		System.out.println(Files.getFileStore(path));//iM (z:)
+		System.out.println(Files.getFileStore(path).name());//iM
+		System.out.println(Files.getFileStore(path).type());//NTFS
+		System.out.println("path="+path);
+		boolean b=Files.exists(path, LinkOption.NOFOLLOW_LINKS) ;
+		System.out.println("b="+b);
+
 		FileTMJ fileS1=new FileTMJ(source1);
-		String source2="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/1 mit RF.textClipping";
+		String source2="\\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner\\2 kein RF.txt";
+//		String source2="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/1 mit RF.textClipping";
 		FileTMJ fileS2=new FileTMJ(source2);
 		String source3="/Volumes/Users/Public/Documents/2 kein RF.txt";
 		FileTMJ fileS3=new FileTMJ(source3);
@@ -34,6 +53,9 @@ public class FileTMJ {
 		String dest="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/6";
 		
 //		FileTMJ fileS=new FileTMJ(source);
+
+		System.out.println("fileS1="+fileS1);
+		System.out.println("fileS1="+fileS1+", exists="+fileS1.exists());
 		System.out.println("fileS1="+fileS1+", exists="+fileS1.exists()+", size="+fileS1.sizeBytes());
 		System.out.println("fileS3="+fileS3+", exists="+fileS3.exists()+", size="+fileS3.sizeBytes());
 		System.out.println("fileS2="+fileS2+", exists="+fileS2.exists()+", size="+fileS2.sizeBytes());
