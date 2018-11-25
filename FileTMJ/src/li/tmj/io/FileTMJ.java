@@ -38,10 +38,13 @@ public class FileTMJ {
 	}
 	
 	private Path resourceFork(Path path) {
-		return path.resolve("..namedfork/rsrc"); // ab 10.10?
+		return path.resolve("rsrc"); // ≤ 10.?
+//		return path.resolve("..namedfork/rsrc"); // > 10.?
 	}
 	
     public boolean hasDataFork() throws IOException {
+//    	FileSystem dataForkPath.getFileSystem())		dataForkPath.getFileSystem().getClass().getSimpleName()	"MacOSXFileSystem"
+    	//System.getProperty("os.name")		"Mac OS X"	bei macOS 10.13.6 High Sierra
     	return hasFork(dataForkPath);
     }
     
@@ -53,10 +56,14 @@ public class FileTMJ {
 		return Files.exists(path, LinkOption.NOFOLLOW_LINKS)
         		&& Files.size(path)>0;
 	}
+	
+
     
 
 	
 	/** returns true, if the object's name was sucessfully changed or need not to be changed, false otherwise. */
+	public boolean setName(String nameNew) {
+//		dataForkPath.
 //	public boolean setName(String nameNew) throws FileAlreadyExistsException {
 //			if(dataFork.getName().equals(nameNew)){
 //				return true;
@@ -86,7 +93,8 @@ public class FileTMJ {
 ////				if( the button_pressed is "Skip" ){ return 0
 ////				my setFilesystemObjectName(filesystemObject, nameNew)
 ////			}
-//		}
+		return false;
+		}
 	
 	
     public FileTMJ child(String child) {
