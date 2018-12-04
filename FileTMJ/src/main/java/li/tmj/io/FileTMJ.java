@@ -1,10 +1,11 @@
 package li.tmj.io;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.CopyOption;
+import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -13,72 +14,14 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 import java.util.stream.Stream;
+import org.pmw.tinylog.Logger;
 
 public class FileTMJ {
 	private Path dataForkPath;
 	private Path resourceForkPath;
 	
-	public static void main(String[] args) throws IOException {
-		String source1;
-		Path path;
-		source1="\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner\\1 mit RF.textClipping"; //-> exists = false!
-//				path=Paths.get(source1);
-//				System.out.println(path.getFileSystem().getClass().getSimpleName());	//WindowsFileSystem "MacOSXFileSystem"// Unter Windows per Samba angebundene Laufwerke werden als WindowsFileSystem angezeigt!
-//				System.out.println(Files.getFileStore(path));//iM (z:)
-		source1="z:\\1 mit RF.textClipping";
-//		String source1="\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner";
-//		String source1="/Users/Public/Documents/x";
-//		String source1="/Volumes/Users/Public/Documents/1 mit RF.textClipping";
-		 path=Paths.get(source1);
-		System.out.println(path.getFileSystem().getClass().getSimpleName());	//WindowsFileSystem "MacOSXFileSystem"// Unter Windows per Samba angebundene Laufwerke werden als WindowsFileSystem angezeigt!
-		System.out.println(Files.getFileStore(path));//iM (z:)
-		System.out.println(Files.getFileStore(path).name());//iM
-		System.out.println(Files.getFileStore(path).type());//NTFS
-		System.out.println("path="+path);
-		boolean b=Files.exists(path, LinkOption.NOFOLLOW_LINKS) ;
-		System.out.println("b="+b);
-
-		FileTMJ fileS1=new FileTMJ(source1);
-		String source2="\\\\172.16.1.40\\Tobias Meyer-Jansons öffentlicher Ordner\\2 kein RF.txt";
-//		String source2="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/1 mit RF.textClipping";
-		FileTMJ fileS2=new FileTMJ(source2);
-		String source3="/Volumes/Users/Public/Documents/2 kein RF.txt";
-		FileTMJ fileS3=new FileTMJ(source3);
-		String source4="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/2 kein RF.txt";
-		FileTMJ fileS4=new FileTMJ(source4);
-		String nameNew="";
-		String dest="/Users/tobias/Documents/Docs/dev/_TestData/Testdata/6";
-		
-//		FileTMJ fileS=new FileTMJ(source);
-
-		System.out.println("fileS1="+fileS1);
-		System.out.println("fileS1="+fileS1+", exists="+fileS1.exists());
-		System.out.println("fileS1="+fileS1+", exists="+fileS1.exists()+", size="+fileS1.sizeBytes());
-		System.out.println("fileS3="+fileS3+", exists="+fileS3.exists()+", size="+fileS3.sizeBytes());
-		System.out.println("fileS2="+fileS2+", exists="+fileS2.exists()+", size="+fileS2.sizeBytes());
-		System.out.println("fileS4="+fileS4+", exists="+fileS4.exists()+", size="+fileS4.sizeBytes());
-		FileTMJ fileD=new FileTMJ(dest);
-		
-//		try {
-//			fileS.moveTo(fileD);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		System.out.println("fileD="+fileD+", exists="+fileD.exists()+", size="+fileD.sizeBytes());
-//		System.out.println("fileS="+fileS+", exists="+fileS.exists()+", size="+fileS.sizeBytes());
-	
-	
-		// Über kreuz testen:
-		// √ Resource Fork wird unter macOS auf macFS erkannt und beim Umbennenen berücksichtigt.
-		// √ Unter macOS auf macFS können keine Dateien/Ordner erstellt werden, die dem Resource-Fork-Path entsprechen, also verwechselt werden könnten.
-		// √ Wie ist es bei Mac-Dateien mit Resource vom Mac aus auf einem NTFS o. Ä.?
-		// Wie ist es vom PC aus auf macFS?
-		
-		
-	}
 	
 	/**
 	 * Constructs a FileTMJ object from this path. The resulting object is associated with the default-filesystem.
@@ -426,13 +369,30 @@ notExists
 
 	
 
+    /**
+     * Computes a hash code for this file object.
+     * <p> The Computation uses the hashCode method of the underlying {@link Path} object.
+     * and satisfies the general contract of the {@link Object#hashCode
+     * Object.hashCode} method.
+     *
+     * @return  The hash-code value for this file object.
+     */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
-		return result;
+		return java.util.Objects.hash( 
+					prime,
+					dataForkPath
+				);
 	}
 
+    /**
+     * Tests this file object for substantial equality with the given object.
+     * Returns the result of the equals method of the underlying {@link Path} objects.
+     * @param   obj   The object to be compared with
+     * @return  {@code true} if the objects are the same;
+     *          {@code false} otherwise.
+     */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -442,10 +402,139 @@ notExists
 		if (getClass() != obj.getClass())
 			return false;
 		FileTMJ other = (FileTMJ) obj;
+		return dataForkPath.equals(other.dataForkPath);
+	}
+	
+	public boolean equalsBinary(FileTMJ file) throws IOException {
+		return equalsBinary(this,file);
+	}
+	/**
+	 * Compares the content of this file with the content of the given object.
+	 * The method must be able to open both of the files and read their content.
+	 * @param file - Object this file should be compared with.
+	 * @return - {@code true} if the contents are identically, {@code false} otherwise.
+	 * @throws IOException 
+	 */
+	public static boolean equalsBinary(FileTMJ file1,FileTMJ file2) throws IOException {
+		Logger.trace("file1={}, file2={}",file1,file2);
+		if(null==file1) { // if the first is null, we return true if all are null.
+			if(null==file2) {
+				return true;
+			}else {
+				return false;
+			}
+		}
+		if(null==file2) {
+			return false;
+		}
+//		for (File f:files)
+//			if(!isSuitable(f))
+//				return false;
+		boolean b=compareConcreteIntern(file1,file2);
+		Logger.trace("return {}",b);
+		return b;
+	}
+	private static boolean compareConcreteIntern(FileTMJ file1,FileTMJ file2) throws IOException {
+		Logger.trace("compareConcreteIntern...");
+//		if(files.length<2) // super class checked this
+//			return false;
+//		if (files[0]==null ^ files[1]==null)
+//			return false;
+//		if(files[0]==null)
+//			return true;
+//		byte[][] fileBytes=new byte[files.length][];
+		if(file1.hasDataFork()!=file2.hasDataFork()) { return false;}
+		if(file1.hasResourceFork()!=file2.hasResourceFork()) {return false;}
+		if(file1.hasDataFork() && !compareConcreteIntern(file1.dataForkPath,file2.dataForkPath)){return false;}
+		if(file1.hasResourceFork() && !compareConcreteIntern(file1.resourceForkPath, file2.resourceForkPath)) {return false;}
+		return true;
+	}
+	/**
+	 * Parameters must not be null
+	 * @param file1
+	 * @param file2
+	 * @return
+	 * @throws IOException 
+	 */
+	private static boolean compareConcreteIntern(Path file1,Path file2) throws IOException {
+		int internalBufferSize=1024;
+		Logger.trace("compareConcreteIntern...");
+		if(Files.size(file1)!=Files.size(file2)) {
+			return false;
+		}
+		
+/*		 options parameter determines how the file is opened:
+ * no are present = READ option. 
+ * In addition, may additional implementationspecific options.
+		Throws:IllegalArgumentException - if an invalid combination of options is specified
+		UnsupportedOperationException - if an unsupported option is specified */
+		try( InputStream inputStream1=Files.newInputStream(file1);//, OpenOption.READ);
+			BufferedInputStream bufferedInputStream1=new BufferedInputStream(inputStream1);
+			InputStream inputStream2=Files.newInputStream(file2);//, OpenOption.READ);
+			BufferedInputStream bufferedInputStream2=new BufferedInputStream(inputStream2);){
+			int maxBytes,maxBytes2;		
+			while(true) {
+				/* estimate number bytes that can be read without blocking.
+				Throws: IOException - if this input stream is closed or an I/O error occurs.	*/
+				maxBytes=bufferedInputStream1.available();
+				maxBytes2=bufferedInputStream2.available();
+				if(maxBytes!=maxBytes2) {
+					return false;
+				}
+				if(1>maxBytes) {
+					break;
+				}
+				if(internalBufferSize<maxBytes) {
+					maxBytes=internalBufferSize;
+				}
+				/*  Returns: number bytes read into the buffer, or -1 if end of stream.
+				Throws:IOException - if an I/O error occurs.  */
+				byte[] fileBytes1=new byte[maxBytes];
+				bufferedInputStream1.read(fileBytes1);
+				byte[] fileBytes2=new byte[maxBytes];//Only available1 is correct for both!
+				bufferedInputStream2.read(fileBytes2);
+				if (!Arrays.equals(fileBytes1, fileBytes2)) { //TODO effektiver?
+					return false;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			Logger.error("File \"{}\" could not be found!",file1);
+		} catch (IOException e) {
+			//by Files.newInputStream if an I/O error occurs
+			Logger.error("Error: Could not access file \"{}\"!",file2);
+		} catch (SecurityException e) {
+			//by Files.newInputStream if read access to the file is denied.
+			Logger.error("Error: Could not access file \"{}\"!",file2);
+		}
+
 		return true;
 	}
 
-	@Override
+	/**
+     * Compares two file objects lexicographically.
+     * Returns the result of the compareTo method of the underlying {@link Path} objects.
+     * The ordering defined by this method is provider specific, and in the case of the default
+     * provider, platform specific. For example on UNIX systems, alphabetic case commonly is significant in comparing
+     * pathnames, on Microsoft Windows systems it is not.
+     * This method does not access the file system and neither file is required to exist.
+     *
+     * <p> This method may not be used to compare paths that are associated
+     * with different file system providers.
+     *
+     * @param   file  the path compared to this path.
+     *
+     * @return  zero if the argument corresponds to a path that is {@link #equals equal} to this object's path,
+     *          a value less than zero if this object's path is lexicographically less than the argument's path,
+     *          a value greater than zero if this object's path is lexicographically greater than the argument's path.
+     *
+     * @throws  ClassCastException
+     *          if the paths are associated with different providers.
+     */
+	public int compareTo(FileTMJ file) {
+		return dataForkPath.compareTo(file.dataForkPath);
+    }
+
+    @Override
 	public String toString() {
 		String s= "FileTMJ [path=" + dataForkPath;
 		try {
