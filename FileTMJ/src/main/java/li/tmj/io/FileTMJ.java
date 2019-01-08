@@ -1,5 +1,15 @@
 package li.tmj.io;
 
+    import java.io.BufferedInputStream;
+    import java.io.BufferedOutputStream;
+    import java.io.ByteArrayOutputStream;
+    import java.io.File;
+    import java.io.FileInputStream;
+    import java.io.FileNotFoundException;
+    import java.io.FileOutputStream;
+    import java.io.IOException;
+    import java.io.InputStream;
+    import java.io.OutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -110,6 +120,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	private Path dataForkPath;
 	private Path resourceForkPath;
 	
+	public static void main(String[] args) {
+		FileTMJ file=new FileTMJ("");
+	}
 
     /**
      * The system-dependent default name-separator character.  This field is
@@ -618,10 +631,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
    * @return  {@code true} if, and only if, this URI is absolute
    */
   public boolean isAbsolute() {
+	  return dataForkPath.isAbsolute();
 //      return scheme != null;
-	  	throw new RuntimeException("Method not implemented!");//TODO IMPLEMENT!      
-//	      return fs.isAbsolute(this);
-	  	
   }
   
 
@@ -830,7 +841,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
   public File toFile(){
 		return dataForkPath.toFile();
   }
-  
+ 
   /**
    * ignores the duality of the macOS forks.
    * @return
@@ -1866,9 +1877,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @throws  IOException – if an I/O error occurs
      * @throws  SecurityException – if a security manager denies the operation
      */
-    public boolean removeIfExists() throws SecurityException,IOException{
+	    public boolean removeIfExists() throws SecurityException,IOException{
+	    		return removeIfExists(false);
+	    }
+    public boolean removeIfExists(boolean ignoreErrors) throws SecurityException,IOException{
     	if(isDirectory()) {
-    		removeDirContent();
+    		removeDirContent(ignoreErrors);
     	}
     	return dataForkPath.getFileSystem().provider().deleteIfExists(dataForkPath);
 //    	return Files.deleteIfExists(dataForkPath);
@@ -1898,10 +1912,10 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //	     * @return  <code>true</code> if successfully deleted; <code>false</code> otherwise
 //	     * @throws  SecurityException
     }
-    private void removeDirContent() throws SecurityException, IOException {
+    private void removeDirContent(boolean ignoreErrors) throws SecurityException, IOException {
     	FileTMJ[] files=containingFiles();
     	for(FileTMJ file:files) {
-    		if(!file.removeIfExists()) {
+    		if(!file.removeIfExists() && !ignoreErrors) {
     			throw new IOException("File tree has changed during operation.");
     		}
     	}
@@ -2360,6 +2374,173 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     
     
     
+
+
+      
+    public byte[] readDataFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+//    	if(!exists()) {
+//    		throw new FileNotFoundException(dataForkPath+" does not exist!");
+//    	}
+    	if(!hasDataFork()) {
+    		return null;
+    	}
+    	return readFork(dataForkPath, options);
+    }
+    public byte[] readResourceFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+    	if(!hasResourceFork()) {
+    		return null;
+    	}
+    	return readFork(resourceForkPath, options);
+    }
+    /** Read the given binary file, and return its contents as a byte array.
+     * @throws IOException */ 
+    private byte[] readFork(Path path, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+    	int len=(int)Files.size(path);
+    	byte[] result = new byte[len];//TODO unchecked casting?!
+    	int totalBytesRead = 0;
+    	try( InputStream inputStream=new BufferedInputStream(Files.newInputStream(path, options)) ){
+    		while(totalBytesRead < result.length){
+    			int bytesRemaining = result.length - totalBytesRead;
+    			//bufferedInputStream.read() returns -1, 0, or more :
+    			  int bytesRead = inputStream.read(result, totalBytesRead, bytesRemaining); 
+    			  if (bytesRead > 0){
+    				  totalBytesRead = totalBytesRead + bytesRead;
+    			  }
+    		  }
+    			  /* the above style is a bit tricky: it places bytes into the 'result' array; 
+                   'result' is an output parameter; the while loop usually has a single iteration only.   */
+//    			  log("Num bytes read: " + totalBytesRead);
+    	  }catch(RuntimeException e) {
+//    	  catch (FileNotFoundException ex) {
+//    			 Throws:IllegalArgumentException - if an invalid combination of options is specified
+//    		  UnsupportedOperationException - if an unsupported option is specified
+//    		  IOException - if an I/O error occurs
+//    		  SecurityException - If a security manager denies access to the file.
+    	  }
+    		  return result;
+      }
+    
+    private byte[] readForkAsBytesIntern(Path path,int maxBytes, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+    	try( InputStream inputStream=new BufferedInputStream(Files.newInputStream(path, options)) ){
+			if(0==maxBytes) {
+				maxBytes=(int) Files.size(path);//// TODO works with small files, only?
+			}
+			byte[] fileBytes = new byte[maxBytes]; 
+			
+//			(java.nio.Files.readAllBytes())
+			
+			inputStream.read(fileBytes);
+			return fileBytes;
+			
+//			//Allocate buffer with 4byte = 32bit = Integer.SIZE
+//			int bytesRead;
+//			while ((bytesRead = inputStream.read(fileBytes)) != -1){
+//			   //if bytesRead == 4 you read 1 int
+//			   //do your stuff
+//			}
+			
+		} catch (FileNotFoundException e) {
+//			Logger.error(ErrorSet.fileNotFoundX(),file);
+		} catch (IOException e) {
+//			Logger.error(ErrorSet.couldNotAccessFile(),file);
+		}
+		return null;
+	}
+      
+      /**
+       Write a byte array to the given file. 
+       Writing binary data is significantly simpler than reading it. 
+      */
+      void write(byte[] input, String outputFileName){
+        log("Writing binary file...");
+        try {
+          OutputStream output = null;
+          try {
+            output = new BufferedOutputStream(new FileOutputStream(outputFileName));
+            output.write(input);
+          }
+          finally {
+            output.close();
+          }
+        }
+        catch(FileNotFoundException ex){
+          log("File not found.");
+        }
+        catch(IOException ex){
+          log(ex);
+        }
+      }
+      
+      /** Read the given binary file, and return its contents as a byte array.*/ 
+      byte[] readAlternateImpl(String inputFileName){
+        log("Reading in binary file named : " + inputFileName);
+        File file = new File(inputFileName);
+        log("File size: " + file.length());
+        byte[] result = null;
+        try {
+          InputStream input =  new BufferedInputStream(new FileInputStream(file));
+          result = readAndClose(input);
+        }
+        catch (FileNotFoundException ex){
+          log(ex);
+        }
+        return result;
+      }
+      
+      /**
+       Read an input stream, and return it as a byte array.  
+       Sometimes the source of bytes is an input stream instead of a file. 
+       This implementation closes aInput after it's read.
+      */
+      byte[] readAndClose(InputStream input){
+        //carries the data from input to output :    
+        byte[] bucket = new byte[32*1024]; 
+        ByteArrayOutputStream result = null; 
+        try  {
+          try {
+            //Use buffering? No. Buffering avoids costly access to disk or network;
+            //buffering to an in-memory stream makes no sense.
+            result = new ByteArrayOutputStream(bucket.length);
+            int bytesRead = 0;
+            while(bytesRead != -1){
+              //aInput.read() returns -1, 0, or more :
+              bytesRead = input.read(bucket);
+              if(bytesRead > 0){
+                result.write(bucket, 0, bytesRead);
+              }
+            }
+          }
+          finally {
+            input.close();
+            //result.close(); this is a no-operation for ByteArrayOutputStream
+          }
+        }
+        catch (IOException ex){
+          log(ex);
+        }
+        return result.toByteArray();
+      }
+      
+      private static void log(Object thing){
+        System.out.println(String.valueOf(thing));
+      }
+//    } 
+    
+    
+    
+    
+    
+    
+      
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -2479,8 +2660,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //	    public static boolean isSameFile(Path path, Path path2) throws IOException {
 //	        return provider(path).isSameFile(path, path2);
 		public boolean sameFile(FileTMJ otherFile) throws IOException {
-//			throw new RuntimeException("Method not implemented, yet!"); //TODO IMPLEMENT!
-			//TODO zunächst canonical implementieren, dann hier bzgl. Exception verbessern!
 			if (this == otherFile) { return true; }
 			if (null==otherFile) { return false; }
 			IOException ioException=null;
@@ -2499,7 +2678,158 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			if(null==path) { return false; }
 			return path.equals(otherPath); // return toCanonicalPath().equals(otherFile.toCanonicalPath());
 		}
+		
+		
+		 //----from org.apache.commons.io.FileUtils.contentEquals(final File file1, final File file2)
+		/*
+		 * Licensed to the Apache Software Foundation (ASF) under one or more
+		 * contributor license agreements.  See the NOTICE file distributed with
+		 * this work for additional information regarding copyright ownership.
+		 * The ASF licenses this file to You under the Apache License, Version 2.0
+		 * (the "License"); you may not use this file except in compliance with
+		 * the License.  You may obtain a copy of the License at
+		 *
+		 *      http://www.apache.org/licenses/LICENSE-2.0
+		 *
+		 * Unless required by applicable law or agreed to in writing, software
+		 * distributed under the License is distributed on an "AS IS" BASIS,
+		 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+		 * See the License for the specific language governing permissions and
+		 * limitations under the License.
+		 */
+		// Origin of code: Excalibur, Alexandria, Commons-Utils
+	    /**
+	     * Compares the contents of two files to determine if they are equal or not.
+	     * <p>
+	     * This method checks to see if the two files are different lengths
+	     * or if they point to the same file, before resorting to byte-by-byte
+	     * comparison of the contents.
+	     * <p>
+	     * Code origin: Avalon
+	     *
+	     * @param file1 the first file
+	     * @param file2 the second file
+	     * @return true if the content of the files are equal or they both don't
+	     * exist, false otherwise
+	     * @throws IOException in case of an I/O error
+	     */
+		public boolean sameContent(FileTMJ otherFile) throws IOException{
+			final boolean dataForkYes = hasDataFork();
+			if (dataForkYes != otherFile.hasDataFork()) {
+				return false;
+	        }
+	        final boolean resourceForkYes = hasResourceFork();
+	        if (resourceForkYes != otherFile.hasResourceFork()) {
+	            return false;
+	        }
+	        if (!dataForkYes && !resourceForkYes) {  // two not existing files are equal
+	        	return true;
+	        }
+	if (isDirectory() || otherFile.isDirectory()) {
+		// don't want to compare directory contents
+		throw new IOException("Can't compare directories, only files");
+	}
+		    if (sizeBytes() != otherFile.sizeBytes()) {
+		    	return false;
+		    }
+		    if (toCanonicalPath().equals(otherFile.toCanonicalPath())) { // same file
+		    	return true;
+		    }
+		    if(dataForkYes) {
+		    	try ( InputStream inputStream = Files.newInputStream(dataForkPath, LinkOption.NOFOLLOW_LINKS);
+		    		  InputStream otherInputStream = Files.newInputStream(otherFile.dataForkPath, LinkOption.NOFOLLOW_LINKS)
+		    		) {
+		    		if(!inputStreamContentEquals(inputStream, otherInputStream)) {
+		    			return false;
+		    		}
+		    	}
+		    }
+		    if(resourceForkYes) {
+		    	try ( InputStream inputStream = Files.newInputStream(resourceForkPath, LinkOption.NOFOLLOW_LINKS);
+		    		  InputStream otherInputStream = Files.newInputStream(otherFile.resourceForkPath, LinkOption.NOFOLLOW_LINKS)
+		    			) {
+		    		if(!inputStreamContentEquals(inputStream, otherInputStream)) {
+		    			return false;
+		    		}
+		    	}
+		    }
+		    return true;   
 
+//			byte[] thisBytes,otherBytes;
+//			thisBytes=readDataFork();
+//			otherBytes=otherFile.readDataFork();
+//			boolean same=thisBytes.equals(otherBytes);//TODO dies wird man wohl selbst implementiert werden müssen.
+//			if(!same) {return false;}
+//			thisBytes=readResourceFork();
+//			otherBytes=otherFile.readResourceFork();
+//			same=thisBytes.equals(otherBytes);//TODO s.v.
+//			if(!same) {return false;}
+//			return true;		
+		}
+		
+		//from org.apache.commons.io.IOUtils.contentEquals(InputStream input1, InputStream input2)
+		/*
+		 * Licensed to the Apache Software Foundation (ASF) under one or more
+		 * contributor license agreements.  See the NOTICE file distributed with
+		 * this work for additional information regarding copyright ownership.
+		 * The ASF licenses this file to You under the Apache License, Version 2.0
+		 * (the "License"); you may not use this file except in compliance with
+		 * the License.  You may obtain a copy of the License at
+		 *
+		 *      http://www.apache.org/licenses/LICENSE-2.0
+		 *
+		 * Unless required by applicable law or agreed to in writing, software
+		 * distributed under the License is distributed on an "AS IS" BASIS,
+		 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+		 * See the License for the specific language governing permissions and
+		 * limitations under the License.
+		 */
+		/*
+		 * All the methods in this class that read a stream are buffered internally.
+		 * This means that there is no cause to use a <code>BufferedInputStream</code>
+		 * or <code>BufferedReader</code>. The default buffer size of 4K has been shown
+		 * to be efficient in tests.
+		 * <p>
+		 * Origin of code: Excalibur.
+		 */
+	    /**
+	     * Compares the contents of two Streams to determine if they are equal or
+	     * not.
+	     * <p>
+	     * This method buffers the input internally using
+	     * <code>BufferedInputStream</code> if they are not already buffered.
+	     *
+	     * @param input1 the first stream
+	     * @param input2 the second stream
+	     * @return true if the content of the streams are equal or they both don't
+	     * exist, false otherwise
+	     * @throws NullPointerException if either input is null
+	     * @throws IOException          if an I/O error occurs
+	     */
+	    private static boolean inputStreamContentEquals(InputStream input1, InputStream input2) throws IOException {
+	        if (input1 == input2) {
+	            return true;
+	        }
+	        if (!(input1 instanceof BufferedInputStream)) {
+	            input1 = new BufferedInputStream(input1);
+	        }
+	        if (!(input2 instanceof BufferedInputStream)) {
+	            input2 = new BufferedInputStream(input2);
+	        }
+
+	        int ch = input1.read();
+	        while (-1 != ch) {// read returns -1 on EOF!
+	            final int ch2 = input2.read();
+	            if (ch != ch2) {
+	                return false;
+	            }
+	            ch = input1.read();
+	        }
+	        final int ch2 = input2.read();
+	        return -1==ch2;
+	    }
+		
+	   
 
 	    /**
 	     * Computes a hash code for this file object.
