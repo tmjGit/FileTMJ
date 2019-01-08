@@ -10,9 +10,16 @@ import li.tmj.io.FileTMJ;
 public class Test {
 
 	public static void main(String[] args) throws IOException {
-		FileTMJ file1=new FileTMJ("C:\\Users\\Public\\Documents\\Docs\\dev\\files\\Compare\\_test\\abc"); 
-		FileTMJ file2=new FileTMJ("C:\\Users\\Public\\Documents\\Docs\\dev\\files\\Compare\\_test\\abc"); 
-		System.out.println("file1 vs file1.equalsBinary(file2): "+file1.equalsBinary(file2) );
+		FileTMJ file1=FileTMJ.getHome();
+//		FileTMJ file1=new FileTMJ("C:\\Users\\Public\\Documents\\Docs\\dev\\files\\Compare\\_test\\abc"); 
+//		FileTMJ file2=new FileTMJ("C:\\Users\\Public\\Documents\\Docs\\dev\\files\\Compare\\_test\\abc"); 
+//		System.out.println("file1 vs file1.equalsBinary(file2): "+file1.equalsBinary(file2) );
+		System.out.println("file1="+file1 );
+		Path path=file1.toPath();
+//		Path p=path.getFileName();
+		String s1=String.valueOf(path.getFileName());//.toString();
+		String s2=String.valueOf(path.toFile().getName());//.toString();
+		System.out.println("file="+path+", s1="+s1+", s2="+s2+", equals="+s1.equals(s2) );
 		
 		
 		
