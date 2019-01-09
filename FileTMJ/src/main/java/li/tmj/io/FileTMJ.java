@@ -120,10 +120,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	private Path dataForkPath;
 	private Path resourceForkPath;
 	
-	public static void main(String[] args) {
-		FileTMJ file=new FileTMJ("");
-	}
-
     /**
      * The system-dependent default name-separator character.  This field is
      * initialized to contain the first character of the value of the system
@@ -247,9 +243,13 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return Files.exists(path, LinkOption.NOFOLLOW_LINKS)
 				&& Files.size(path)>0;
 //		        try {
-//		            
+//		            if (followLinks(options)) {
+//		                provider(path).checkAccess(path);
+//		            } else {
+//		                // attempt to read attributes without following links
 //		                readAttributes(path, BasicFileAttributes.class,
 //		                               LinkOption.NOFOLLOW_LINKS);
+//		            }
 //		            // file exists
 //		            return true;
 //		        } catch (IOException x) {
@@ -954,12 +954,16 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
   }
   
   /**
-   * Returns the file system that created this object.
+   * Returns the file system that created this file/directory.
+   * This file/directory must exist to make this work.
    *
-   * @return  the file system that created this object
+   * @return  the file system that created this object or null if the object does not exist.
    */
   public FileSystem getFileSystem(){
-	  return dataForkPath.getFileSystem();
+	  if(exists()) {
+		  return dataForkPath.getFileSystem();
+	  }
+	  return null;
 	}
 
 
