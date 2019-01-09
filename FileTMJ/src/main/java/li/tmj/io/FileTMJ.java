@@ -113,6 +113,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.pmw.tinylog.Logger;
 
+import li.tmj.io.FileTMJ.CompareResult.CompareResultDetail;
 import sun.security.action.GetPropertyAction;
 
 public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializable {
@@ -2684,6 +2685,104 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		}
 		
 		
+		static class CompareResult {
+			enum CompareResultDetail { EXIST_vs_DONT, DONT_vs_EXIST, SIZE_DIFFERS, CONTENT_DIFFERS, TYPE_DIFFERS, IDENTICAL, SAME_CONTENT, SAME_FILE, BOTH_EXIST, BOTH_DONT_EXIST; 
+			
+				public boolean isSame() {
+					return this==SAME_CONTENT || this==SAME_FILE ||this==BOTH_DONT_EXIST;
+				}
+			}
+			
+			private CompareResultDetail dataFork;
+			private CompareResultDetail resourceFork;
+			private CompareResultDetail dataSizeBytes;
+			private CompareResultDetail resourceSizeBytes;
+//			private CompareResultDetail sizeBytes;
+//			private CompareResultDetail sizeBytes;
+			private CompareResultDetail resultDetails;
+			private boolean result;
+
+			public CompareResultDetail getDataFork() {
+				return dataFork;
+			}
+			protected void setDataFork(CompareResultDetail resultDetail) {
+				this.dataFork = resultDetail;
+			}
+			public CompareResultDetail getResourceFork() {
+				return resourceFork;
+			}
+			protected void setResourceFork(CompareResultDetail resultDetail) {
+				this.resourceFork = resultDetail;
+			}
+			public CompareResultDetail getDataSizeBytes() {
+				return dataSizeBytes;
+			}
+			protected void setDataSizeBytes(CompareResultDetail resultDetail) {
+				this.dataSizeBytes = resultDetail;
+			}
+			public CompareResultDetail getResourceSizeBytes() {
+				return resourceSizeBytes;
+			}
+			protected void setResourceSizeBytes(CompareResultDetail resultDetail) {
+				this.resourceSizeBytes = resultDetail;
+			}
+			public CompareResultDetail getResultDetails() {
+				return resultDetails;
+			}
+			protected void setResultDetails(CompareResultDetail resultDetail) {
+				this.resultDetails = resultDetail;
+			}
+			public boolean isResult() {
+				return result;
+			}
+			protected void setResult(boolean result) {
+				this.result = result;
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime * result + ((dataFork == null) ? 0 : dataFork.hashCode());
+				result = prime * result + ((dataSizeBytes == null) ? 0 : dataSizeBytes.hashCode());
+				result = prime * result + ((resourceFork == null) ? 0 : resourceFork.hashCode());
+				result = prime * result + ((resourceSizeBytes == null) ? 0 : resourceSizeBytes.hashCode());
+				result = prime * result + (this.result ? 1231 : 1237);
+				return result;
+			}
+			
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj)
+					return true;
+				if (obj == null)
+					return false;
+				if (getClass() != obj.getClass())
+					return false;
+				CompareResult other = (CompareResult) obj;
+				if (dataFork != other.dataFork)
+					return false;
+				if (dataSizeBytes != other.dataSizeBytes)
+					return false;
+				if (resourceFork != other.resourceFork)
+					return false;
+				if (resourceSizeBytes != other.resourceSizeBytes)
+					return false;
+				if (resultDetails != other.resultDetails)
+					return false;
+				if (result != other.result)
+					return false;
+				return true;
+			}
+
+			@Override
+			public String toString() {
+				return "CompareResult [dataFork=" + dataFork + ", resourceFork=" + resourceFork + ", dataSizeBytes="
+						+ dataSizeBytes + ", resourceSizeBytes=" + resourceSizeBytes + ", resultDetails=" + resultDetails + ", result=" + result + "]";
+			}
+			
+			
+		}
 		 //----from org.apache.commons.io.FileUtils.contentEquals(final File file1, final File file2)
 		/*
 		 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -2718,46 +2817,128 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	     * @throws IOException in case of an I/O error
 	     */
 		public boolean sameContent(FileTMJ otherFile) throws IOException{
-			final boolean dataForkYes = hasDataFork();
-			if (dataForkYes != otherFile.hasDataFork()) {
-				return false;
-	        }
-	        final boolean resourceForkYes = hasResourceFork();
-	        if (resourceForkYes != otherFile.hasResourceFork()) {
-	            return false;
-	        }
-	        if (!dataForkYes && !resourceForkYes) {  // two not existing files are equal
-	        	return true;
+			return sameContent(otherFile,false).result;
+		}
+		public CompareResult sameContent(FileTMJ otherFile,boolean complete) throws IOException{
+			CompareResult result=new CompareResult();
+			if(hasDataFork()) {
+				if(otherFile.hasDataFork()){
+					result.setDataFork(CompareResultDetail.BOTH_EXIST);
+				}else {
+					result.setDataFork(CompareResultDetail.EXIST_vs_DONT);
+					result.setResult(false);
+					if(!complete) {
+						return result;
+					}
+				}
+			}else if(otherFile.hasDataFork()) {
+				result.setDataFork(CompareResultDetail.DONT_vs_EXIST);
+				result.setResult(false);
+				if(!complete) {
+					return result;
+				}
+			}else {
+				result.setDataFork(CompareResultDetail.BOTH_DONT_EXIST);
+			}
+//			final boolean dataForkYes = hasDataFork();
+//			if (dataForkYes != otherFile.hasDataFork()) {
+//				return false;
+//	        }
+			if(hasResourceFork()) {
+				if(otherFile.hasResourceFork()){
+					result.setResourceFork(CompareResultDetail.BOTH_EXIST);
+				}else {
+					result.setResourceFork(CompareResultDetail.EXIST_vs_DONT);
+					result.setResult(false);
+					if(!complete) {
+						return result;
+					}
+				}
+			}else if(otherFile.hasResourceFork()) {
+				result.setResourceFork(CompareResultDetail.DONT_vs_EXIST);
+				result.setResult(false);
+				if(!complete) {
+					return result;
+				}
+			}else {
+				result.setResourceFork(CompareResultDetail.BOTH_DONT_EXIST);
+			}
+//			final boolean resourceForkYes = hasResourceFork();
+//	        if (resourceForkYes != otherFile.hasResourceFork()) {
+//	            return false;
+//	        }
+			if(CompareResultDetail.BOTH_DONT_EXIST==result.getDataFork() && CompareResultDetail.BOTH_DONT_EXIST==result.getResourceFork()) {
+//	        if (!dataForkYes && !resourceForkYes) {  // two not existing files are equal
+				result.setResult(true);
+	        	return result;
 	        }
 	if (isDirectory() || otherFile.isDirectory()) {
 		// don't want to compare directory contents
 		throw new IOException("Can't compare directories, only files");
 	}
-		    if (sizeBytes() != otherFile.sizeBytes()) {
-		    	return false;
+//		    if (sizeBytes() != otherFile.sizeBytes()) {
+			if(CompareResultDetail.BOTH_EXIST==result.getDataFork()) {
+				if(Files.size(dataForkPath) == Files.size(otherFile.dataForkPath)) {
+					result.setDataSizeBytes(CompareResultDetail.IDENTICAL);
+				}else {
+					result.setDataSizeBytes(CompareResultDetail.SIZE_DIFFERS);
+					result.setResult(false);
+					if(!complete) {
+						return result;
+					}
+				}
+			}
+			if(CompareResultDetail.BOTH_EXIST==result.getResourceFork()) {
+				if(Files.size(resourceForkPath) == Files.size(otherFile.resourceForkPath)) {
+					result.setResourceSizeBytes(CompareResultDetail.IDENTICAL);
+				}else {
+					result.setResourceSizeBytes(CompareResultDetail.SIZE_DIFFERS);
+					result.setResult(false);
+					if(!complete) {
+						return result;
+					}
+				}
+			}
+		    if (toCanonicalPath().equals(otherFile.toCanonicalPath())) {
+		    	result.setDataFork(CompareResultDetail.SAME_FILE);
+		    	result.setResourceFork(CompareResultDetail.SAME_FILE);
+		    	return result;
 		    }
-		    if (toCanonicalPath().equals(otherFile.toCanonicalPath())) { // same file
-		    	return true;
-		    }
-		    if(dataForkYes) {
+			if(CompareResultDetail.BOTH_EXIST==result.getDataFork()) {
+//		    if(dataForkYes) {
 		    	try ( InputStream inputStream = Files.newInputStream(dataForkPath, LinkOption.NOFOLLOW_LINKS);
 		    		  InputStream otherInputStream = Files.newInputStream(otherFile.dataForkPath, LinkOption.NOFOLLOW_LINKS)
 		    		) {
-		    		if(!inputStreamContentEquals(inputStream, otherInputStream)) {
-		    			return false;
+		    		if(inputStreamContentEquals(inputStream, otherInputStream)) {
+		    			result.setDataFork(CompareResultDetail.SAME_CONTENT);
+						result.setResult(true);
+		    		}else {
+		    			result.setDataFork(CompareResultDetail.CONTENT_DIFFERS);
+						result.setResult(false);
+						if(!complete) {
+							return result;
+						}
 		    		}
 		    	}
 		    }
-		    if(resourceForkYes) {
+			if(CompareResultDetail.BOTH_EXIST==result.getResourceFork()) {
+//		    if(resourceForkYes) {
 		    	try ( InputStream inputStream = Files.newInputStream(resourceForkPath, LinkOption.NOFOLLOW_LINKS);
 		    		  InputStream otherInputStream = Files.newInputStream(otherFile.resourceForkPath, LinkOption.NOFOLLOW_LINKS)
 		    			) {
 		    		if(!inputStreamContentEquals(inputStream, otherInputStream)) {
-		    			return false;
+		    			result.setDataFork(CompareResultDetail.SAME_CONTENT);
+						result.setResult(true);
+		    		}else {
+		    			result.setDataFork(CompareResultDetail.CONTENT_DIFFERS);
+						result.setResult(false);
+						if(!complete) {
+							return result;
+						}
 		    		}
 		    	}
 		    }
-		    return true;   
+		    return result;   
 
 //			byte[] thisBytes,otherBytes;
 //			thisBytes=readDataFork();
