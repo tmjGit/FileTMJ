@@ -118,6 +118,7 @@ import sun.security.action.GetPropertyAction;
 
 public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializable {
 	private static final long serialVersionUID = 5094284926669869769L;
+	private FileSystem fileSystem;
 	private Path dataForkPath;
 	private Path resourceForkPath;
 	
@@ -174,7 +175,11 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	}
 
 	public FileTMJ(String filePath) {
-		this(Paths.get(filePath)); // =  return FileSystems.getDefault().getPath(first, more); = 	FileTMJ(FileSystems.getDefault(), filePath) {
+		this(filePath,FileSystems.getDefault()); // =  return FileSystems.getDefault().getPath(first, more); = 	FileTMJ(FileSystems.getDefault(), filePath) {
+	}
+	
+	public FileTMJ(String filePath, FileSystem fileSystem) {
+		this(fileSystem.getPath(filePath));
 		/**
 	     * Converts a path string, or a sequence of strings that when joined form
 	     * a path string, to a {@code Path}. If {@code more} does not specify any
@@ -224,6 +229,11 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	
 	private void init(Path path) {
 		dataForkPath=path;
+		if(null==dataForkPath) {
+			fileSystem=null;
+		}else {
+			fileSystem=dataForkPath.getFileSystem();		
+		}
 		resourceForkPath=resourceFork(dataForkPath);
 	}
 	
@@ -240,25 +250,81 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	public boolean hasResourceFork() throws IOException {
 		return hasFork(resourceForkPath);
 	}
-	private boolean hasFork(Path path) throws IOException {
-		return Files.exists(path, LinkOption.NOFOLLOW_LINKS)
-				&& Files.size(path)>0;
-//		        try {
-//		            if (followLinks(options)) {
-//		                provider(path).checkAccess(path);
-//		            } else {
-//		                // attempt to read attributes without following links
-//		                readAttributes(path, BasicFileAttributes.class,
-//		                               LinkOption.NOFOLLOW_LINKS);
-//		            }
-//		            // file exists
-//		            return true;
-//		        } catch (IOException x) {
-//		            // does not exist or unable to determine if file exists
-//		            return false;
-//		        }
-
+		private boolean hasFork(Path path) throws IOException {
+		// Files.exists tries to read file attributes and interpretes an error as not-exists!
+		// So we don't need that separated.
+		try {
+			return 0<readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).size(); // file exists and is not empty
+		} catch (IOException x) { // does not exist or unable to determine if file exists
+			return false;
+		}
 	}
+	
+	
+    /**
+     * from: Files.readAttributes und Files.provider
+     * Reads a file's attributes as a bulk operation.
+     *
+     * <p> The {@code type} parameter is the type of the attributes required
+     * and this method returns an instance of that type if supported. All
+     * implementations support a basic set of file attributes and so invoking
+     * this method with a  {@code type} parameter of {@code
+     * BasicFileAttributes.class} will not throw {@code
+     * UnsupportedOperationException}.
+     *
+     * <p> The {@code options} array may be used to indicate how symbolic links
+     * are handled for the case that the file is a symbolic link. By default,
+     * symbolic links are followed and the file attribute of the final target
+     * of the link is read. If the option {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+     *
+     * <p> It is implementation specific if all file attributes are read as an
+     * atomic operation with respect to other file system operations.
+     *
+     * <p> <b>Usage Example:</b>
+     * Suppose we want to read a file's attributes in bulk:
+     * <pre>
+     *    Path path = ...
+     *    BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+     * </pre>
+     * Alternatively, suppose we want to read file's POSIX attributes without
+     * following symbolic links:
+     * <pre>
+     *    PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
+     * </pre>
+     *
+     * @param   <A>
+     *          The {@code BasicFileAttributes} type
+     * @param   path
+     *          the path to the file
+     * @param   type
+     *          the {@code Class} of the file attributes required
+     *          to read
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  the file attributes
+     *
+     * @throws  UnsupportedOperationException
+     *          if an attributes of the given type are not supported
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the file. If this
+     *          method is invoked to read security sensitive attributes then the
+     *          security manager may be invoke to check for additional permissions.
+     */
+    private static BasicFileAttributes readBasicFileAttributes(Path path, LinkOption... options) throws IOException {
+    	return path.getFileSystem().provider().readAttributes(path, BasicFileAttributes.class, options);
+    }
+    private static <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
+    	return path.getFileSystem().provider().readAttributes(path, type, options);
+    }
+
+	
+	
 
 
     
@@ -305,7 +371,18 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     	return exists(LinkOption.NOFOLLOW_LINKS);
     }
     public boolean exists(LinkOption... linkOptions) throws SecurityException{
-		return Files.exists(dataForkPath, linkOptions) || Files.exists(resourceForkPath, linkOptions);
+//		return Files.exists(dataForkPath, linkOptions) || Files.exists(resourceForkPath, linkOptions);
+		try {
+			readBasicFileAttributes(dataForkPath, linkOptions); // file exists
+			return true;
+		} catch (IOException e) { // does not exist or unable to determine if file exists
+			try {
+				readBasicFileAttributes(resourceForkPath, linkOptions); // file exists
+				return true;
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				return false;
+			}
+		}
     }
 
 //    /**
@@ -384,7 +461,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return isDirectory(LinkOption.NOFOLLOW_LINKS);
 	}
 	public boolean isDirectory(LinkOption... linkOptions) {
-		return Files.isDirectory(dataForkPath, linkOptions);
+//		return Files.isDirectory(dataForkPath, linkOptions);
+        try {
+            return readAttributes(dataForkPath, BasicFileAttributes.class, linkOptions).isDirectory();
+        } catch (IOException ioe) {
+            return false;
+        }
     }
 
     /**
@@ -412,7 +494,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return isRegularFile(LinkOption.NOFOLLOW_LINKS);
 	}
 	public boolean isRegularFile(LinkOption... linkOptions) {
-		return Files.isRegularFile(dataForkPath, linkOptions);
+//		return Files.isRegularFile(dataForkPath, linkOptions);
+        try {
+            return readAttributes(dataForkPath, BasicFileAttributes.class, linkOptions).isRegularFile();
+        } catch (IOException ioe) {
+            return false;
+        }
     }
     
 	public String extension() {
@@ -823,7 +910,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
  * @see     Path#toRealPath
  */
   public Path toCanonicalPath() throws IOException {
-	  return Paths.get(toCanonicalPathString());
+//	  return Paths.get(toCanonicalPathString());
+	  return fileSystem.getPath(toCanonicalPathString());
 //    if (isInvalid()) {
 //        throw new IOException("Invalid file path");
 //    }
@@ -961,10 +1049,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
    * @return  the file system that created this object or null if the object does not exist.
    */
   public FileSystem getFileSystem(){
-	  if(exists()) {
-		  return dataForkPath.getFileSystem();
-	  }
-	  return null;
+	  return fileSystem;
 	}
 
 
@@ -1276,7 +1361,94 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     }
 
    
-	  /**
+//	/**
+//	 * From Files.list
+//     * Return a lazily populated {@code Stream}, the elements of
+//     * which are the entries in the directory.  The listing is not recursive.
+//     *
+//     * <p> The elements of the stream are {@link Path} objects that are
+//     * obtained as if by {@link Path#resolve(Path) resolving} the name of the
+//     * directory entry against {@code dir}. Some file systems maintain special
+//     * links to the directory itself and the directory's parent directory.
+//     * Entries representing these links are not included.
+//     *
+//     * <p> The stream is <i>weakly consistent</i>. It is thread safe but does
+//     * not freeze the directory while iterating, so it may (or may not)
+//     * reflect updates to the directory that occur after returning from this
+//     * method.
+//     *
+//     * <p> The returned stream encapsulates a {@link DirectoryStream}.
+//     * If timely disposal of file system resources is required, the
+//     * {@code try}-with-resources construct should be used to ensure that the
+//     * stream's {@link Stream#close close} method is invoked after the stream
+//     * operations are completed.
+//     *
+//     * <p> Operating on a closed stream behaves as if the end of stream
+//     * has been reached. Due to read-ahead, one or more elements may be
+//     * returned after the stream has been closed.
+//     *
+//     * <p> If an {@link IOException} is thrown when accessing the directory
+//     * after this method has returned, it is wrapped in an {@link
+//     * UncheckedIOException} which will be thrown from the method that caused
+//     * the access to take place.
+//     *
+//     * @param   dir  The path to the directory
+//     *
+//     * @return  The {@code Stream} describing the content of the
+//     *          directory
+//     *
+//     * @throws  NotDirectoryException
+//     *          if the file could not otherwise be opened because it is not
+//     *          a directory <i>(optional specific exception)</i>
+//     * @throws  IOException
+//     *          if an I/O error occurs when opening the directory
+//     * @throws  SecurityException
+//     *          In the case of the default provider, and a security manager is
+//     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+//     *          method is invoked to check read access to the directory.
+//     *
+//     * @see     #newDirectoryStream(Path)
+//     * @since   1.8
+//     */
+//    public static Stream<Path> list(Path dir) throws IOException {
+//        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
+//        try {
+//            final Iterator<Path> delegate = ds.iterator();
+//
+//            // Re-wrap DirectoryIteratorException to UncheckedIOException
+//            Iterator<Path> it = new Iterator<Path>() {
+//                @Override
+//                public boolean hasNext() {
+//                    try {
+//                        return delegate.hasNext();
+//                    } catch (DirectoryIteratorException e) {
+//                        throw new UncheckedIOException(e.getCause());
+//                    }
+//                }
+//                @Override
+//                public Path next() {
+//                    try {
+//                        return delegate.next();
+//                    } catch (DirectoryIteratorException e) {
+//                        throw new UncheckedIOException(e.getCause());
+//                    }
+//                }
+//            };
+//
+//            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
+//                                .onClose(asUncheckedRunnable(ds));
+//        } catch (Error|RuntimeException e) {
+//            try {
+//                ds.close();
+//            } catch (IOException ex) {
+//                try {
+//                    e.addSuppressed(ex);
+//                } catch (Throwable ignore) {}
+//            }
+//            throw e;
+//        }
+//    }
+    /**
 			 * Stream<Path> java.nio.file.Files.list(Path dir) throws IOException
 		Return a lazily populated Stream, the elements of which are the entries in the directory. The listing is not recursive.
 		The elements of the stream are Path objects that are obtained as if by resolving the name of the directory entry against dir. Some file systems maintain special links to the directory itself and the directory's parent directory. Entries representing these links are not included.
