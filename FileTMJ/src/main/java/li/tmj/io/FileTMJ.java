@@ -61,9 +61,7 @@ import java.util.Spliterators;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import static java.security.AccessController.doPrivileged;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -99,6 +97,7 @@ import java.nio.file.NotLinkException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SecureDirectoryStream;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 //import java.nio.file.CopyMoveHelper;
@@ -112,7 +111,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.pmw.tinylog.Logger;
-
 import li.tmj.io.FileTMJ.CompareResult.CompareResultDetail;
 import sun.security.action.GetPropertyAction;
 
@@ -1361,93 +1359,145 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     }
 
    
-//	/**
-//	 * From Files.list
-//     * Return a lazily populated {@code Stream}, the elements of
-//     * which are the entries in the directory.  The listing is not recursive.
-//     *
-//     * <p> The elements of the stream are {@link Path} objects that are
-//     * obtained as if by {@link Path#resolve(Path) resolving} the name of the
-//     * directory entry against {@code dir}. Some file systems maintain special
-//     * links to the directory itself and the directory's parent directory.
-//     * Entries representing these links are not included.
-//     *
-//     * <p> The stream is <i>weakly consistent</i>. It is thread safe but does
-//     * not freeze the directory while iterating, so it may (or may not)
-//     * reflect updates to the directory that occur after returning from this
-//     * method.
-//     *
-//     * <p> The returned stream encapsulates a {@link DirectoryStream}.
-//     * If timely disposal of file system resources is required, the
-//     * {@code try}-with-resources construct should be used to ensure that the
-//     * stream's {@link Stream#close close} method is invoked after the stream
-//     * operations are completed.
-//     *
-//     * <p> Operating on a closed stream behaves as if the end of stream
-//     * has been reached. Due to read-ahead, one or more elements may be
-//     * returned after the stream has been closed.
-//     *
-//     * <p> If an {@link IOException} is thrown when accessing the directory
-//     * after this method has returned, it is wrapped in an {@link
-//     * UncheckedIOException} which will be thrown from the method that caused
-//     * the access to take place.
-//     *
-//     * @param   dir  The path to the directory
-//     *
-//     * @return  The {@code Stream} describing the content of the
-//     *          directory
-//     *
-//     * @throws  NotDirectoryException
-//     *          if the file could not otherwise be opened because it is not
-//     *          a directory <i>(optional specific exception)</i>
-//     * @throws  IOException
-//     *          if an I/O error occurs when opening the directory
-//     * @throws  SecurityException
-//     *          In the case of the default provider, and a security manager is
-//     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-//     *          method is invoked to check read access to the directory.
-//     *
-//     * @see     #newDirectoryStream(Path)
-//     * @since   1.8
-//     */
-//    public static Stream<Path> list(Path dir) throws IOException {
-//        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
-//        try {
-//            final Iterator<Path> delegate = ds.iterator();
-//
-//            // Re-wrap DirectoryIteratorException to UncheckedIOException
-//            Iterator<Path> it = new Iterator<Path>() {
-//                @Override
-//                public boolean hasNext() {
-//                    try {
-//                        return delegate.hasNext();
-//                    } catch (DirectoryIteratorException e) {
-//                        throw new UncheckedIOException(e.getCause());
-//                    }
-//                }
-//                @Override
-//                public Path next() {
-//                    try {
-//                        return delegate.next();
-//                    } catch (DirectoryIteratorException e) {
-//                        throw new UncheckedIOException(e.getCause());
-//                    }
-//                }
-//            };
-//
-//            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
-//                                .onClose(asUncheckedRunnable(ds));
-//        } catch (Error|RuntimeException e) {
-//            try {
-//                ds.close();
-//            } catch (IOException ex) {
-//                try {
-//                    e.addSuppressed(ex);
-//                } catch (Throwable ignore) {}
-//            }
-//            throw e;
-//        }
-//    }
+	private static class AcceptAllFilter implements DirectoryStream.Filter<Path> {
+		private AcceptAllFilter() { }
+		@Override public boolean accept(Path entry) { return true; }
+		static final AcceptAllFilter FILTER = new AcceptAllFilter();
+	}
+	/**
+     * Opens a directory, returning a {@link DirectoryStream} to iterate over
+     * all entries in the directory. The elements returned by the directory
+     * stream's {@link DirectoryStream#iterator iterator} are of type {@code
+     * Path}, each one representing an entry in the directory. The {@code Path}
+     * objects are obtained as if by {@link Path#resolve(Path) resolving} the
+     * name of the directory entry against {@code dir}.
+     *
+     * <p> When not using the try-with-resources construct, then directory
+     * stream's {@code close} method should be invoked after iteration is
+     * completed so as to free any resources held for the open directory.
+     *
+     * <p> When an implementation supports operations on entries in the
+     * directory that execute in a race-free manner then the returned directory
+     * stream is a {@link SecureDirectoryStream}.
+     *
+     * @param   dir
+     *          the path to the directory
+     *
+     * @return  a new and open {@code DirectoryStream} object
+     *
+     * @throws  NotDirectoryException
+     *          if the file could not otherwise be opened because it is not
+     *          a directory <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the directory.
+     */
+    public static DirectoryStream<Path> newDirectoryStream(Path dir) throws IOException {
+    	return dir.getFileSystem().provider().newDirectoryStream(dir, AcceptAllFilter.FILTER);
+    }
+    /**
+     * Convert a Closeable to a Runnable by converting checked IOException
+     * to UncheckedIOException
+     */
+    private static Runnable asUncheckedRunnable(Closeable c) {
+        return () -> {
+            try {
+                c.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        };
+    }
+    /**
+	 * From Files.list
+     * Return a lazily populated {@code Stream}, the elements of
+     * which are the entries in the directory.  The listing is not recursive.
+     *
+     * <p> The elements of the stream are {@link Path} objects that are
+     * obtained as if by {@link Path#resolve(Path) resolving} the name of the
+     * directory entry against {@code dir}. Some file systems maintain special
+     * links to the directory itself and the directory's parent directory.
+     * Entries representing these links are not included.
+     *
+     * <p> The stream is <i>weakly consistent</i>. It is thread safe but does
+     * not freeze the directory while iterating, so it may (or may not)
+     * reflect updates to the directory that occur after returning from this
+     * method.
+     *
+     * <p> The returned stream encapsulates a {@link DirectoryStream}.
+     * If timely disposal of file system resources is required, the
+     * {@code try}-with-resources construct should be used to ensure that the
+     * stream's {@link Stream#close close} method is invoked after the stream
+     * operations are completed.
+     *
+     * <p> Operating on a closed stream behaves as if the end of stream
+     * has been reached. Due to read-ahead, one or more elements may be
+     * returned after the stream has been closed.
+     *
+     * <p> If an {@link IOException} is thrown when accessing the directory
+     * after this method has returned, it is wrapped in an {@link
+     * UncheckedIOException} which will be thrown from the method that caused
+     * the access to take place.
+     *
+     * @param   dir  The path to the directory
+     *
+     * @return  The {@code Stream} describing the content of the
+     *          directory
+     *
+     * @throws  NotDirectoryException
+     *          if the file could not otherwise be opened because it is not
+     *          a directory <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs when opening the directory
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the directory.
+     *
+     * @see     #newDirectoryStream(Path)
+     * @since   1.8
+     */
+    public static Stream<Path> list(Path dir) throws IOException {
+        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
+        try {
+            final Iterator<Path> delegate = ds.iterator();
+
+            // Re-wrap DirectoryIteratorException to UncheckedIOException
+            Iterator<Path> it = new Iterator<Path>() {
+                @Override
+                public boolean hasNext() {
+                    try {
+                        return delegate.hasNext();
+                    } catch (DirectoryIteratorException e) {
+                        throw new UncheckedIOException(e.getCause());
+                    }
+                }
+                @Override
+                public Path next() {
+                    try {
+                        return delegate.next();
+                    } catch (DirectoryIteratorException e) {
+                        throw new UncheckedIOException(e.getCause());
+                    }
+                }
+            };
+
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
+                                .onClose(asUncheckedRunnable(ds));
+        } catch (Error|RuntimeException e) {
+            try {
+                ds.close();
+            } catch (IOException ex) {
+                try {
+                    e.addSuppressed(ex);
+                } catch (Throwable ignore) {}
+            }
+            throw e;
+        }
+    }
     /**
 			 * Stream<Path> java.nio.file.Files.list(Path dir) throws IOException
 		Return a lazily populated Stream, the elements of which are the entries in the directory. The listing is not recursive.
@@ -1764,7 +1814,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          granted with the "{@code readlink}" action to read the link.
      */
     public FileTMJ readSymbolicLinkTarget() throws IOException {
-    	return new FileTMJ(Files.readSymbolicLink(dataForkPath));
+//    	return new FileTMJ(Files.readSymbolicLink(dataForkPath));
+        return new FileTMJ(dataForkPath.getFileSystem().provider().readSymbolicLink(dataForkPath));
     }
     
     /**
@@ -1788,21 +1839,20 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          method denies read access to the file.
      */
     public boolean isSymbolicLink() {
-    	return Files.isSymbolicLink(dataForkPath);
-//        try {
-//            return readAttributes(path,
-//                                  BasicFileAttributes.class,
-//                                  LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
-//        } catch (IOException ioe) {
-//            return false;
-//        }
+//    	return Files.isSymbolicLink(dataForkPath);
+        try {
+            return readAttributes(dataForkPath,
+                                  BasicFileAttributes.class,
+                                  LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
+        } catch (IOException ioe) {
+            return false;
+        }
     }
     
-    
-    
-    
+   
     
 	/**
+	 * From Files.exists
 	 * Returns the size of a file (in bytes). 
 	 * The size may differ from the actual size on the file system due to compression, support for sparse files, or other reasons. 
 	 * The size of files that are not regular files is implementation specific and therefore unspecified.
@@ -1821,17 +1871,43 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	public long sizeBytes(LinkOption...linkOptions) throws SecurityException, IOException{
 		long dataSize=0;
 		long resourceSize=0;
-		if(!Files.exists(dataForkPath, linkOptions) && !Files.exists(resourceForkPath,linkOptions)) {
-			throw new FileNotFoundException();
-		}else {
-			if(Files.exists(dataForkPath, linkOptions)) {
-				dataSize=Files.size(dataForkPath);
+//		if(!exists(linkOptions)){
+//		}else {
+			// Files.exists tries to read file attributes and interpretes an error as not-exists!
+			// So we don't need that separated.
+			try {
+				dataSize=readBasicFileAttributes(dataForkPath, linkOptions).size(); // file exists
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				dataSize=-1;
 			}
-			if(Files.exists(resourceForkPath,linkOptions)) {
-				resourceSize=Files.size(resourceForkPath);
+			try {
+				resourceSize=readBasicFileAttributes(resourceForkPath, linkOptions).size(); // file exists
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				resourceSize=-1;
 			}
-		}
-		return dataSize+resourceSize;
+			if(0>dataSize) {
+				if(0>resourceSize) {
+					throw new FileNotFoundException();
+				}else {
+					return resourceSize;
+				}
+			}else if(0>resourceSize){
+				return dataSize;
+			}else {
+				return dataSize+resourceSize;
+			}
+//		}
+//		if(!Files.exists(dataForkPath, linkOptions) && !Files.exists(resourceForkPath,linkOptions)) {
+//			throw new FileNotFoundException();
+//		}else {
+//			if(Files.exists(dataForkPath, linkOptions)) {
+//				dataSize=Files.size(dataForkPath);
+//			}
+//			if(Files.exists(resourceForkPath,linkOptions)) {
+//				resourceSize=Files.size(resourceForkPath);
+//			}
+//		}
+//		return dataSize+resourceSize;
 	}
     
     
@@ -1850,15 +1926,18 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			// try{
 			Path dest=parent.resolve(nameNew);
 			// }
-			if( Files.exists(dest, LinkOption.NOFOLLOW_LINKS) ){
+			
+//			if( Files.exists(dest, LinkOption.NOFOLLOW_LINKS) ){
+			try {
+				readBasicFileAttributes(dest, LinkOption.NOFOLLOW_LINKS); // file exists
 				throw new FileAlreadyExistsException(dest.toString());//TODO
 				//tell me=display dialog "This name is already taken, please rename." default answer nameNew buttons {"Cancel", "Skip", "OK"} default button 3
 				//copy the result as list={nameNew, button_pressed}
 				//if( the button_pressed is "Skip" ){ return 0
 				//my setFilesystemObjectName(FilesystemObject, nameNew)
-			}// if( not (exists item (the parent_container_path + nameNew)) ){
-//					try{
-//			if(simulate) { return false; }
+			} catch (IOException e) { // does not exist or unable to determine if file exists
+			}
+
 			try {
 				dataForkPath=Files.move(dataForkPath, dest, StandardCopyOption.ATOMIC_MOVE);//Dies wirkt sich auch korrekt auf den Ressource Fork aus, jedenfalls
 				// unter macOS 10.13.6 und HFS+j
@@ -2038,6 +2117,22 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		public FileTMJ moveTo(FileTMJ destination) throws IOException {
 			Path path=Files.move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
 			return new FileTMJ(path);
+////			public static Path move(Path source, Path target, CopyOption... options) throws IOException  {
+//			        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
+//			        if (destination.getFileSystem().provider() == provider) {
+//			            // same provider
+//			            provider.move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
+//			        } else {
+//			            // different providers
+////			        	java.nio.file.CopyMoveHelper.moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
+//			        	java.nio.file.CopyMoveHelper.moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
+//			 
+//     copyToForeignTarget(dataForkPath, destination.dataForkPath, convertMoveToCopyOptions(StandardCopyOption.ATOMIC_MOVE));
+//     Files.delete(dataForkPath);
+// }
+//			        }
+//			        return new FileTMJ(destination);
+////			    }
 		}
 
     
