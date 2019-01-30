@@ -61,7 +61,9 @@ import java.util.Spliterators;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
 import static java.security.AccessController.doPrivileged;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -111,6 +113,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.pmw.tinylog.Logger;
+
 import li.tmj.io.FileTMJ.CompareResult.CompareResultDetail;
 import sun.security.action.GetPropertyAction;
 
@@ -1339,7 +1342,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @since  1.2
      */
 	public FileTMJ[] containingFiles() throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+																														
 		return containingFilesStream().toArray(FileTMJ[]::new);
+																													 
 //        SecurityManager security = System.getSecurityManager();
 //        if (security != null) {
 //            security.checkRead(path);
@@ -1448,56 +1453,94 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          directory
      *
      * @throws  NotDirectoryException
-     *          if the file could not otherwise be opened because it is not
-     *          a directory <i>(optional specific exception)</i>
+																																					 
+     *          if the file is no directory <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs when opening the directory
      * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-     *          method is invoked to check read access to the directory.
+																																							
+																																									
+     *          If a security manager denies read access to the directory.
      *
      * @see     #newDirectoryStream(Path)
      * @since   1.8
      */
-    public static Stream<Path> list(Path dir) throws IOException {
-        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
-        try {
-            final Iterator<Path> delegate = ds.iterator();
+ 
+//    public static Stream<Path> list(Path dir) throws IOException {
+//        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
+//        try {
+//            final Iterator<Path> delegate = ds.iterator();
+//
+//            // Re-wrap DirectoryIteratorException to UncheckedIOException
+//            Iterator<Path> it = new Iterator<Path>() {
+//                @Override
+//                public boolean hasNext() {
+//                    try {
+//                        return delegate.hasNext();
+//                    } catch (DirectoryIteratorException e) {
+//                        throw new UncheckedIOException(e.getCause());
+//                    }
+//                }
+//                @Override
+//                public Path next() {
+//                    try {
+//                        return delegate.next();
+//                    } catch (DirectoryIteratorException e) {
+//                        throw new UncheckedIOException(e.getCause());
+//                    }
+//                }
+//            };
+//
+//            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
+//                                .onClose(asUncheckedRunnable(ds));
+//        } catch (Error|RuntimeException e) {
+//            try {
+//                ds.close();
+//            } catch (IOException ex) {
+//                try {
+//                    e.addSuppressed(ex);
+//                } catch (Throwable ignore) {}
+//            }
+//            throw e;
+//        }
+//    }
+	private Stream<Path> containingFilesStream() throws NotDirectoryException,IOException,UncheckedIOException,SecurityException {
+		DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);
+//		try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);) {
+			final Iterator<Path> iterator = directoryStream.iterator();
 
-            // Re-wrap DirectoryIteratorException to UncheckedIOException
-            Iterator<Path> it = new Iterator<Path>() {
-                @Override
-                public boolean hasNext() {
-                    try {
-                        return delegate.hasNext();
-                    } catch (DirectoryIteratorException e) {
-                        throw new UncheckedIOException(e.getCause());
-                    }
-                }
-                @Override
-                public Path next() {
-                    try {
-                        return delegate.next();
-                    } catch (DirectoryIteratorException e) {
-                        throw new UncheckedIOException(e.getCause());
-                    }
-                }
-            };
+																																
 
-            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
-                                .onClose(asUncheckedRunnable(ds));
-        } catch (Error|RuntimeException e) {
-            try {
-                ds.close();
-            } catch (IOException ex) {
-                try {
-                    e.addSuppressed(ex);
-                } catch (Throwable ignore) {}
-            }
-            throw e;
-        }
-    }
+			// Re-wrap DirectoryIteratorException to UncheckedIOException
+			Iterator<Path> it = new Iterator<Path>() {
+				@Override
+				public boolean hasNext() {
+					try {
+						return iterator.hasNext();
+					} catch (DirectoryIteratorException e) {
+						throw new UncheckedIOException(e.getCause());
+					}
+				}
+				@Override
+				public Path next() {
+					try {
+						return iterator.next();
+					} catch (DirectoryIteratorException e) {
+						throw new UncheckedIOException(e.getCause());
+					}
+				}
+			};
+
+			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
+					.onClose( () -> {
+						//From java.nio.file.Files: Convert a Closeable to a Runnable by converting checked IOException to UncheckedIOException
+						try {
+							directoryStream.close();
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					} );
+	}
     /**
 			 * Stream<Path> java.nio.file.Files.list(Path dir) throws IOException
 		Return a lazily populated Stream, the elements of which are the entries in the directory. The listing is not recursive.
@@ -1521,9 +1564,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			 * @throws IOException,SecurityException,NotDirectoryException
 			 * 		NoSuchFileException - if this FileTMJ does not exist and so cannot contain anything
 			 */
-			public Stream<FileTMJ> containingFilesStream() throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-				return Files.list(dataForkPath).map(path->new FileTMJ(path));
-			}
+//			public Stream<FileTMJ> containingFilesStream() throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+//				return Files.list(dataForkPath).map(path->new FileTMJ(path));
+//			}
 	/**
      * Returns an array of abstract pathnames denoting the files and
      * directories in the directory denoted by this abstract pathname that
@@ -1554,26 +1597,26 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @since  1.2
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
-	public FileTMJ[] containingFiles(FilenameFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-		return Files.list(dataForkPath)
-			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
-			.toArray(FileTMJ[]::new);
-	}
-	public FileTMJ[] containingFiles(FileFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-		return containingFilesStream()
-			.filter( path->filter.accept( path.toFile() ))
-			.toArray(FileTMJ[]::new);
-	}
-	public Stream<FileTMJ> containingFilesStream(FilenameFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-		return Files.list(dataForkPath)
-			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
-			.map(path->new FileTMJ(path));
-	}  
-	public Stream<FileTMJ> containingFilesStream(FileFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-		return Files.list(dataForkPath)
-			.filter( path->filter.accept( path.toFile() ))
-			.map(path->new FileTMJ(path));
-	}
+//	public FileTMJ[] containingFiles(FilenameFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+//		return Files.list(dataForkPath)
+//			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
+//			.toArray(FileTMJ[]::new);
+//	}
+//	public FileTMJ[] containingFiles(FileFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+//		return containingFilesStream()
+//			.filter( path->filter.accept( path.toFile() ))
+//			.toArray(FileTMJ[]::new);
+//	}
+//	public Stream<FileTMJ> containingFilesStream(FilenameFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+//		return Files.list(dataForkPath)
+//			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
+//			.map(path->new FileTMJ(path));
+//	}  
+//	public Stream<FileTMJ> containingFilesStream(FileFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+//		return Files.list(dataForkPath)
+//			.filter( path->filter.accept( path.toFile() ))
+//			.map(path->new FileTMJ(path));
+//	}
 	
 
 
@@ -1809,16 +1852,17 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @throws  IOException
      *          if an I/O error occurs
      * @throws  SecurityException
-     *          In the case of the default provider, and a security manager
-     *          is installed, it checks that {@code FilePermission} has been
-     *          granted with the "{@code readlink}" action to read the link.
+     *          If a security manager denies to read the link.
+																																						
+																																						
      */
-    public FileTMJ readSymbolicLinkTarget() throws IOException {
-//    	return new FileTMJ(Files.readSymbolicLink(dataForkPath));
-        return new FileTMJ(dataForkPath.getFileSystem().provider().readSymbolicLink(dataForkPath));
+    public FileTMJ readSymbolicLinkTarget() throws IOException, UnsupportedOperationException,NotLinkException,SecurityException {
+																																
+    	return new FileTMJ(dataForkPath.getFileSystem().provider().readSymbolicLink(dataForkPath));
     }
     
     /**
+     * From java.nio.file.Files
      * Tests whether a file is a symbolic link.
      *
      * <p> Where it is required to distinguish an I/O exception from the case
@@ -1839,7 +1883,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          method denies read access to the file.
      */
     public boolean isSymbolicLink() {
-//    	return Files.isSymbolicLink(dataForkPath);
         try {
             return readAttributes(dataForkPath,
                                   BasicFileAttributes.class,
@@ -1850,6 +1893,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     }
     
    
+		
+		
     
 	/**
 	 * From Files.exists
