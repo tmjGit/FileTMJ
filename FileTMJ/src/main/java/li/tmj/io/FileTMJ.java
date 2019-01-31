@@ -252,7 +252,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return hasFork(resourceForkPath);
 	}
 		private boolean hasFork(Path path) throws IOException {
-		// Files.exists tries to read file attributes and interpretes an error as not-exists!
+		// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
 		// So we don't need that separated.
 		try {
 			return 0<readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).size(); // file exists and is not empty
@@ -263,7 +263,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	
 	
     /**
-     * from: Files.readAttributes und Files.provider
+     * from: java.nio.file.Files.readAttributes und java.nio.file.Files.provider
      * Reads a file's attributes as a bulk operation.
      *
      * <p> The {@code type} parameter is the type of the attributes required
@@ -286,12 +286,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * Suppose we want to read a file's attributes in bulk:
      * <pre>
      *    Path path = ...
-     *    BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+     *    BasicFileAttributes attrs = java.nio.file.Files.readAttributes(path, BasicFileAttributes.class);
      * </pre>
      * Alternatively, suppose we want to read file's POSIX attributes without
      * following symbolic links:
      * <pre>
-     *    PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
+     *    PosixFileAttributes attrs = java.nio.file.Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
      * </pre>
      *
      * @param   <A>
@@ -372,7 +372,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     	return exists(LinkOption.NOFOLLOW_LINKS);
     }
     public boolean exists(LinkOption... linkOptions) throws SecurityException{
-//		return Files.exists(dataForkPath, linkOptions) || Files.exists(resourceForkPath, linkOptions);
 		try {
 			readBasicFileAttributes(dataForkPath, linkOptions); // file exists
 			return true;
@@ -1417,7 +1416,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
         };
     }
     /**
-	 * From Files.list
+	 * From java.nio.file.Files.list
      * Return a lazily populated {@code Stream}, the elements of
      * which are the entries in the directory.  The listing is not recursive.
      *
@@ -1467,7 +1466,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      */
  
 //    public static Stream<Path> list(Path dir) throws IOException {
-//        DirectoryStream<Path> ds = Files.newDirectoryStream(dir);
+//        DirectoryStream<Path> ds = java.nio.file.Files.newDirectoryStream(dir);
 //        try {
 //            final Iterator<Path> delegate = ds.iterator();
 //
@@ -1505,7 +1504,43 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //        }
 //    }
 	private Stream<Path> containingFilesStream() throws NotDirectoryException,IOException,UncheckedIOException,SecurityException {
-		DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);
+		 /**
+	     * Opens a directory, returning a {@link DirectoryStream} to iterate over
+	     * all entries in the directory. The elements returned by the directory
+	     * stream's {@link DirectoryStream#iterator iterator} are of type {@code
+	     * Path}, each one representing an entry in the directory. The {@code Path}
+	     * objects are obtained as if by {@link Path#resolve(Path) resolving} the
+	     * name of the directory entry against {@code dir}.
+	     *
+	     * <p> When not using the try-with-resources construct, then directory
+	     * stream's {@code close} method should be invoked after iteration is
+	     * completed so as to free any resources held for the open directory.
+	     *
+	     * <p> When an implementation supports operations on entries in the
+	     * directory that execute in a race-free manner then the returned directory
+	     * stream is a {@link SecureDirectoryStream}.
+	     *
+	     * @param   dir
+	     *          the path to the directory
+	     *
+	     * @return  a new and open {@code DirectoryStream} object
+	     *
+	     * @throws  NotDirectoryException
+	     *          if the file could not otherwise be opened because it is not
+	     *          a directory <i>(optional specific exception)</i>
+	     * @throws  IOException
+	     *          if an I/O error occurs
+	     * @throws  SecurityException
+	     *          In the case of the default provider, and a security manager is
+	     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+	     *          method is invoked to check read access to the directory.
+	     */
+//	    public static DirectoryStream<Path> newDirectoryStream(Path dir)
+//	        throws IOException
+//	    {
+		DirectoryStream	directoryStream= dataForkPath.getFileSystem().provider().newDirectoryStream(dataForkPath, AcceptAllFilter.FILTER);
+//	    }
+//		DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);
 //		try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);) {
 			final Iterator<Path> iterator = directoryStream.iterator();
 
