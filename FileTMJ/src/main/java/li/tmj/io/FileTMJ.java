@@ -1,81 +1,22 @@
 package li.tmj.io;
 
-    import java.io.BufferedInputStream;
-    import java.io.BufferedOutputStream;
-    import java.io.ByteArrayOutputStream;
-    import java.io.File;
-    import java.io.FileInputStream;
-    import java.io.FileNotFoundException;
-    import java.io.FileOutputStream;
-    import java.io.IOException;
-    import java.io.InputStream;
-    import java.io.OutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.io.Writer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.DosFileAttributes;   // javadoc
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileOwnerAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
-import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.spi.FileSystemProvider;
-import java.nio.file.spi.FileTypeDetector;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.BiPredicate;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static java.security.AccessController.doPrivileged;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryIteratorException;
@@ -86,10 +27,8 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemLoopException;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.LinkPermission;
@@ -102,18 +41,23 @@ import java.nio.file.Paths;
 import java.nio.file.SecureDirectoryStream;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-//import java.nio.file.CopyMoveHelper;
-//import java.nio.file.TempFileHelper;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.security.AccessController;
+import java.security.SecureRandom;
+import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
-import org.pmw.tinylog.Logger;
-
+import java.util.stream.StreamSupport;
 import li.tmj.io.FileTMJ.CompareResult.CompareResultDetail;
 import sun.security.action.GetPropertyAction;
 
@@ -461,7 +405,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return isDirectory(LinkOption.NOFOLLOW_LINKS);
 	}
 	public boolean isDirectory(LinkOption... linkOptions) {
-//		return Files.isDirectory(dataForkPath, linkOptions);
+//		return java.nio.file.Files.isDirectory(dataForkPath, linkOptions);
         try {
             return readAttributes(dataForkPath, BasicFileAttributes.class, linkOptions).isDirectory();
         } catch (IOException ioe) {
@@ -494,7 +438,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return isRegularFile(LinkOption.NOFOLLOW_LINKS);
 	}
 	public boolean isRegularFile(LinkOption... linkOptions) {
-//		return Files.isRegularFile(dataForkPath, linkOptions);
+//		return java.nio.file.Files.isRegularFile(dataForkPath, linkOptions);
         try {
             return readAttributes(dataForkPath, BasicFileAttributes.class, linkOptions).isRegularFile();
         } catch (IOException ioe) {
@@ -1540,8 +1484,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //	    {
 		DirectoryStream	directoryStream= dataForkPath.getFileSystem().provider().newDirectoryStream(dataForkPath, AcceptAllFilter.FILTER);
 //	    }
-//		DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);
-//		try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(dataForkPath);) {
+//		DirectoryStream<Path> directoryStream = java.nio.file.Files.newDirectoryStream(dataForkPath);
+//		try(DirectoryStream<Path> directoryStream = java.nio.file.Files.newDirectoryStream(dataForkPath);) {
 			final Iterator<Path> iterator = directoryStream.iterator();
 
 																																
@@ -1600,7 +1544,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			 * 		NoSuchFileException - if this FileTMJ does not exist and so cannot contain anything
 			 */
 //			public Stream<FileTMJ> containingFilesStream() throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//				return Files.list(dataForkPath).map(path->new FileTMJ(path));
+//				return java.nio.file.Files.list(dataForkPath).map(path->new FileTMJ(path));
 //			}
 	/**
      * Returns an array of abstract pathnames denoting the files and
@@ -1633,7 +1577,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
 //	public FileTMJ[] containingFiles(FilenameFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-//		return Files.list(dataForkPath)
+//		return java.nio.file.Files.list(dataForkPath)
 //			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
 //			.toArray(FileTMJ[]::new);
 //	}
@@ -1643,12 +1587,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //			.toArray(FileTMJ[]::new);
 //	}
 //	public Stream<FileTMJ> containingFilesStream(FilenameFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//		return Files.list(dataForkPath)
+//		return java.nio.file.Files.list(dataForkPath)
 //			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
 //			.map(path->new FileTMJ(path));
 //	}  
 //	public Stream<FileTMJ> containingFilesStream(FileFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//		return Files.list(dataForkPath)
+//		return java.nio.file.Files.list(dataForkPath)
 //			.filter( path->filter.accept( path.toFile() ))
 //			.map(path->new FileTMJ(path));
 //	}
@@ -1932,7 +1876,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		
     
 	/**
-	 * From Files.exists
+	 * From java.nio.file.Files.exists
 	 * Returns the size of a file (in bytes). 
 	 * The size may differ from the actual size on the file system due to compression, support for sparse files, or other reasons. 
 	 * The size of files that are not regular files is implementation specific and therefore unspecified.
@@ -1953,7 +1897,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		long resourceSize=0;
 //		if(!exists(linkOptions)){
 //		}else {
-			// Files.exists tries to read file attributes and interpretes an error as not-exists!
+			// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
 			// So we don't need that separated.
 			try {
 				dataSize=readBasicFileAttributes(dataForkPath, linkOptions).size(); // file exists
@@ -1977,14 +1921,14 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 				return dataSize+resourceSize;
 			}
 //		}
-//		if(!Files.exists(dataForkPath, linkOptions) && !Files.exists(resourceForkPath,linkOptions)) {
+//		if(!java.nio.file.Files.exists(dataForkPath, linkOptions) && !java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
 //			throw new FileNotFoundException();
 //		}else {
-//			if(Files.exists(dataForkPath, linkOptions)) {
-//				dataSize=Files.size(dataForkPath);
+//			if(java.nio.file.Files.exists(dataForkPath, linkOptions)) {
+//				dataSize=java.nio.file.Files.size(dataForkPath);
 //			}
-//			if(Files.exists(resourceForkPath,linkOptions)) {
-//				resourceSize=Files.size(resourceForkPath);
+//			if(java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
+//				resourceSize=java.nio.file.Files.size(resourceForkPath);
 //			}
 //		}
 //		return dataSize+resourceSize;
@@ -2007,7 +1951,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			Path dest=parent.resolve(nameNew);
 			// }
 			
-//			if( Files.exists(dest, LinkOption.NOFOLLOW_LINKS) ){
+//			if( java.nio.file.Files.exists(dest, LinkOption.NOFOLLOW_LINKS) ){
 			try {
 				readBasicFileAttributes(dest, LinkOption.NOFOLLOW_LINKS); // file exists
 				throw new FileAlreadyExistsException(dest.toString());//TODO
@@ -2019,7 +1963,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			}
 
 			try {
-				dataForkPath=Files.move(dataForkPath, dest, StandardCopyOption.ATOMIC_MOVE);//Dies wirkt sich auch korrekt auf den Ressource Fork aus, jedenfalls
+			dataForkPath=files_move(dataForkPath, dest, StandardCopyOption.ATOMIC_MOVE);//Dies wirkt sich auch korrekt auf den Ressource Fork aus, jedenfalls
 				// unter macOS 10.13.6 und HFS+j
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -2087,7 +2031,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * IOException}). To move a <i>file tree</i> may involve copying rather
      * than moving directories and this can be done using the {@link
      * #copy copy} method in conjunction with the {@link
-     * #walkFileTree Files.walkFileTree} utility method.
+     * #walkFileTree java.nio.file.Files.walkFileTree} utility method.
      *
      * <p> The {@code options} parameter may include any of the following:
      *
@@ -2132,7 +2076,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * same directory:
      * <pre>
      *     Path source = ...
-     *     Files.move(source, source.resolveSibling("newname"));
+     *     java.nio.file.Files.move(source, source.resolveSibling("newname"));
      * </pre>
      * Alternatively, suppose we want to move a file to new directory, keeping
      * the same file name, and replacing any existing file of that name in the
@@ -2140,7 +2084,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * <pre>
      *     Path source = ...
      *     Path newdir = ...
-     *     Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
+     *     java.nio.file.Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
      * </pre>
      *
      * @param   target
@@ -2195,7 +2139,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //        }
 //        return fs.rename(this, dest);
 		public FileTMJ moveTo(FileTMJ destination) throws IOException {
-			Path path=Files.move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
+			Path path=files_move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
 			return new FileTMJ(path);
 ////			public static Path move(Path source, Path target, CopyOption... options) throws IOException  {
 //			        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
@@ -2208,7 +2152,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //			        	java.nio.file.CopyMoveHelper.moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
 //			 
 //     copyToForeignTarget(dataForkPath, destination.dataForkPath, convertMoveToCopyOptions(StandardCopyOption.ATOMIC_MOVE));
-//     Files.delete(dataForkPath);
+//     java.nio.file.Files.delete(dataForkPath);
 // }
 //			        }
 //			        return new FileTMJ(destination);
@@ -2237,7 +2181,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     		removeDirContent(ignoreErrors);
     	}
     	return dataForkPath.getFileSystem().provider().deleteIfExists(dataForkPath);
-//    	return Files.deleteIfExists(dataForkPath);
+//    	return java.nio.file.Files.deleteIfExists(dataForkPath);
 //		 * java.nio.file.Files.delete(path);
 //       * = path.getFileSystem().provider().delete(path);
 //		 * boolean java.nio.file.Files.deleteIfExists(path);
@@ -2359,7 +2303,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          method to check access to the system property {@code user.dir}
      */
     public boolean createDirectory(FileAttribute<?>... attributes) throws UnsupportedOperationException,FileAlreadyExistsException,IOException,SecurityException {
-		Path path=Files.createDirectories(dataForkPath,attributes);
+		Path path=files_createDirectories(dataForkPath,attributes);
 		if(null!=path) {
 			init(path);
 			return true;
@@ -2432,7 +2376,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     
     
     public static FileTMJ systemTempDirectory() {
-    	return new FileTMJ(Paths.get(doPrivileged(new GetPropertyAction("java.io.tmpdir"))));
+    	return new FileTMJ(Paths.get(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir"))));
     }
 
     /**
@@ -2477,7 +2421,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @throws  SecurityException – if a security manager exists and denies the write access
      */
     public static FileTMJ createTempFileChild(String prefix, String suffix, FileAttribute<?>... attributes) throws IOException {
-    	return new FileTMJ(Files.createTempFile(prefix, suffix, attributes));
+    	return new FileTMJ(files_createTempFile(prefix, suffix, attributes));
     }
     public static FileTMJ createTempFileChild(FileAttribute<?>... attributes) throws IOException {
     	return createTempFileChild(null,null,attributes);
@@ -2526,9 +2470,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      */
     public FileTMJ createTempFile(String prefix, String suffix, FileAttribute<?>... attributes) throws IOException {
     	if(isDirectory()) {
-        	return new FileTMJ(Files.createTempFile(dataForkPath,prefix, suffix, attributes));
+        	return new FileTMJ(files_createTempFile(dataForkPath,prefix, suffix, attributes));
     	}else {
-        	return new FileTMJ(Files.createTempFile(dataForkPath.getParent(),prefix, suffix, attributes));
+        	return new FileTMJ(files_createTempFile(dataForkPath.getParent(),prefix, suffix, attributes));
     	}
     }
     public FileTMJ createTempFile(FileAttribute<?>... attributes) throws IOException {
@@ -2566,7 +2510,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @throws  SecurityException – if a security manager exists and denies the write access
      */
     public static FileTMJ createTempDirectory(String prefix, FileAttribute<?>... attributes) throws IOException {
-    	return new FileTMJ(Files.createTempDirectory(prefix, attributes));
+    	return new FileTMJ(files_createTempDirectory(prefix, attributes));
     }
     public static FileTMJ createTempDirectory(FileAttribute<?>... attributes) throws IOException {
     	return createTempFileChild(null,null,attributes);
@@ -2613,9 +2557,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      */
     public FileTMJ createTempDirectoryChild(String prefix, FileAttribute<?>... attributes) throws IOException {
     	if(isDirectory()) {
-        	return new FileTMJ(Files.createTempDirectory(dataForkPath,prefix, attributes));
+        	return new FileTMJ(files_createTempDirectory(dataForkPath,prefix, attributes));
     	}else {
-        	return new FileTMJ(Files.createTempDirectory(dataForkPath.getParent(),prefix, attributes));
+        	return new FileTMJ(files_createTempDirectory(dataForkPath.getParent(),prefix, attributes));
     	}
     }
     public FileTMJ createTempDirectoryChild(FileAttribute<?>... attributes) throws IOException {
@@ -2747,10 +2691,10 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     /** Read the given binary file, and return its contents as a byte array.
      * @throws IOException */ 
     private byte[] readFork(Path path, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-    	int len=(int)Files.size(path);
+    	int len=(int)files_size(path);
     	byte[] result = new byte[len];//TODO unchecked casting?!
     	int totalBytesRead = 0;
-    	try( InputStream inputStream=new BufferedInputStream(Files.newInputStream(path, options)) ){
+    	try( InputStream inputStream=new BufferedInputStream(files_newInputStream(path, options)) ){
     		while(totalBytesRead < result.length){
     			int bytesRemaining = result.length - totalBytesRead;
     			//bufferedInputStream.read() returns -1, 0, or more :
@@ -2773,13 +2717,13 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
       }
     
     private byte[] readForkAsBytesIntern(Path path,int maxBytes, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-    	try( InputStream inputStream=new BufferedInputStream(Files.newInputStream(path, options)) ){
+    	try( InputStream inputStream=new BufferedInputStream(files_newInputStream(path, options)) ){
 			if(0==maxBytes) {
-				maxBytes=(int) Files.size(path);//// TODO works with small files, only?
+				maxBytes=(int) files_size(path);//// TODO works with small files, only?
 			}
 			byte[] fileBytes = new byte[maxBytes]; 
 			
-//			(java.nio.Files.readAllBytes())
+//			(java.nio.file.Files.readAllBytes())
 			
 			inputStream.read(fileBytes);
 			return fileBytes;
@@ -3225,7 +3169,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	}
 //		    if (sizeBytes() != otherFile.sizeBytes()) {
 			if(CompareResultDetail.BOTH_EXIST==result.getDataFork()) {
-				if(Files.size(dataForkPath) == Files.size(otherFile.dataForkPath)) {
+				if(files_size(dataForkPath) == files_size(otherFile.dataForkPath)) {
 					result.setDataSizeBytes(CompareResultDetail.IDENTICAL);
 				}else {
 					result.setDataSizeBytes(CompareResultDetail.SIZE_DIFFERS);
@@ -3236,7 +3180,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 				}
 			}
 			if(CompareResultDetail.BOTH_EXIST==result.getResourceFork()) {
-				if(Files.size(resourceForkPath) == Files.size(otherFile.resourceForkPath)) {
+				if(files_size(resourceForkPath) == files_size(otherFile.resourceForkPath)) {
 					result.setResourceSizeBytes(CompareResultDetail.IDENTICAL);
 				}else {
 					result.setResourceSizeBytes(CompareResultDetail.SIZE_DIFFERS);
@@ -3253,8 +3197,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		    }
 			if(CompareResultDetail.BOTH_EXIST==result.getDataFork()) {
 //		    if(dataForkYes) {
-		    	try ( InputStream inputStream = Files.newInputStream(dataForkPath, LinkOption.NOFOLLOW_LINKS);
-		    		  InputStream otherInputStream = Files.newInputStream(otherFile.dataForkPath, LinkOption.NOFOLLOW_LINKS)
+		    	try ( InputStream inputStream = files_newInputStream(dataForkPath, LinkOption.NOFOLLOW_LINKS);
+		    		  InputStream otherInputStream = files_newInputStream(otherFile.dataForkPath, LinkOption.NOFOLLOW_LINKS)
 		    		) {
 		    		if(inputStreamContentEquals(inputStream, otherInputStream)) {
 		    			result.setDataFork(CompareResultDetail.SAME_CONTENT);
@@ -3270,8 +3214,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		    }
 			if(CompareResultDetail.BOTH_EXIST==result.getResourceFork()) {
 //		    if(resourceForkYes) {
-		    	try ( InputStream inputStream = Files.newInputStream(resourceForkPath, LinkOption.NOFOLLOW_LINKS);
-		    		  InputStream otherInputStream = Files.newInputStream(otherFile.resourceForkPath, LinkOption.NOFOLLOW_LINKS)
+		    	try ( InputStream inputStream = files_newInputStream(resourceForkPath, LinkOption.NOFOLLOW_LINKS);
+		    		  InputStream otherInputStream = files_newInputStream(otherFile.resourceForkPath, LinkOption.NOFOLLOW_LINKS)
 		    			) {
 		    		if(!inputStreamContentEquals(inputStream, otherInputStream)) {
 		    			result.setDataFork(CompareResultDetail.SAME_CONTENT);
@@ -3404,5 +3348,1737 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		s=s+ "]";
 		return s;
 	}
+    
+    /**
+     * Creates a new directory in the specified directory, using the given
+     * prefix to generate its name.  The resulting {@code Path} is associated
+     * with the same {@code FileSystem} as the given directory.
+     *
+     * <p> The details as to how the name of the directory is constructed is
+     * implementation dependent and therefore not specified. Where possible
+     * the {@code prefix} is used to construct candidate names.
+     *
+     * <p> As with the {@code createTempFile} methods, this method is only
+     * part of a temporary-file facility. A {@link Runtime#addShutdownHook
+     * shutdown-hook}, or the {@link java.io.File#deleteOnExit} mechanism may be
+     * used to delete the directory automatically.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the directory. Each
+     * attribute is identified by its {@link FileAttribute#name name}. If more
+     * than one attribute of the same name is included in the array then all but
+     * the last occurrence is ignored.
+     *
+     * @param   dir
+     *          the path to directory in which to create the directory
+     * @param   prefix
+     *          the prefix string to be used in generating the directory's name;
+     *          may be {@code null}
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the path to the newly created directory that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix cannot be used to generate a candidate directory name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or {@code dir} does not exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access when creating the
+     *          directory.
+     */
+    public static Path files_createTempDirectory(Path dir, String prefix,  FileAttribute<?>... attrs)  throws IOException  {
+        return TempFileHelper.createTempDirectory(Objects.requireNonNull(dir),
+                                                  prefix, attrs);
+    }
+    
+    /**
+     * Creates a new directory in the default temporary-file directory, using
+     * the given prefix to generate its name. The resulting {@code Path} is
+     * associated with the default {@code FileSystem}.
+     *
+     * <p> This method works in exactly the manner specified by {@link
+     * #createTempDirectory(Path,String,FileAttribute[])} method for the case
+     * that the {@code dir} parameter is the temporary-file directory.
+     *
+     * @param   prefix
+     *          the prefix string to be used in generating the directory's name;
+     *          may be {@code null}
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the path to the newly created directory that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix cannot be used to generate a candidate directory name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or the temporary-file directory does not
+     *          exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access when creating the
+     *          directory.
+     */
+    public static Path files_reateTempDirectory(String prefix, FileAttribute<?>... attrs) throws IOException {
+        return TempFileHelper.createTempDirectory(null, prefix, attrs);
+    }
+    
+    
+    
+    
+    
+    //////////////////// java.nio.file.Files ////////////////////
+
+    
+    
+    
+    /**
+     * Move or rename a file to a target file.
+     *
+     * <p> By default, this method attempts to move the file to the target
+     * file, failing if the target file exists except if the source and
+     * target are the {@link #isSameFile same} file, in which case this method
+     * has no effect. If the file is a symbolic link then the symbolic link
+     * itself, not the target of the link, is moved. This method may be
+     * invoked to move an empty directory. In some implementations a directory
+     * has entries for special files or links that are created when the
+     * directory is created. In such implementations a directory is considered
+     * empty when only the special entries exist. When invoked to move a
+     * directory that is not empty then the directory is moved if it does not
+     * require moving the entries in the directory.  For example, renaming a
+     * directory on the same {@link FileStore} will usually not require moving
+     * the entries in the directory. When moving a directory requires that its
+     * entries be moved then this method fails (by throwing an {@code
+     * IOException}). To move a <i>file tree</i> may involve copying rather
+     * than moving directories and this can be done using the {@link
+     * #copy copy} method in conjunction with the {@link
+     * #walkFileTree Files.walkFileTree} utility method.
+     *
+     * <p> The {@code options} parameter may include any of the following:
+     *
+     * <table border=1 cellpadding=5 summary="">
+     * <tr> <th>Option</th> <th>Description</th> </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
+     *   <td> If the target file exists, then the target file is replaced if it
+     *     is not a non-empty directory. If the target file exists and is a
+     *     symbolic link, then the symbolic link itself, not the target of
+     *     the link, is replaced. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </td>
+     *   <td> The move is performed as an atomic file system operation and all
+     *     other options are ignored. If the target file exists then it is
+     *     implementation specific if the existing file is replaced or this method
+     *     fails by throwing an {@link IOException}. If the move cannot be
+     *     performed as an atomic file system operation then {@link
+     *     AtomicMoveNotSupportedException} is thrown. This can arise, for
+     *     example, when the target location is on a different {@code FileStore}
+     *     and would require that the file be copied, or target location is
+     *     associated with a different provider to this object. </td>
+     * </table>
+     *
+     * <p> An implementation of this interface may support additional
+     * implementation specific options.
+     *
+     * <p> Moving a file will copy the {@link
+     * BasicFileAttributes#lastModifiedTime last-modified-time} to the target
+     * file if supported by both source and target file stores. Copying of file
+     * timestamps may result in precision loss. An implementation may also
+     * attempt to copy other file attributes but is not required to fail if the
+     * file attributes cannot be copied. When the move is performed as
+     * a non-atomic operation, and an {@code IOException} is thrown, then the
+     * state of the files is not defined. The original file and the target file
+     * may both exist, the target file may be incomplete or some of its file
+     * attributes may not been copied from the original file.
+     *
+     * <p> <b>Usage Examples:</b>
+     * Suppose we want to rename a file to "newname", keeping the file in the
+     * same directory:
+     * <pre>
+     *     Path source = ...
+     *     Files.move(source, source.resolveSibling("newname"));
+     * </pre>
+     * Alternatively, suppose we want to move a file to new directory, keeping
+     * the same file name, and replacing any existing file of that name in the
+     * directory:
+     * <pre>
+     *     Path source = ...
+     *     Path newdir = ...
+     *     Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
+     * </pre>
+     *
+     * @param   source
+     *          the path to the file to move
+     * @param   target
+     *          the path to the target file (may be associated with a different
+     *          provider to the source path)
+     * @param   options
+     *          options specifying how the move should be done
+     *
+     * @return  the path to the target file
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains a copy option that is not supported
+     * @throws  FileAlreadyExistsException
+     *          if the target file exists but cannot be replaced because the
+     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *          specific exception)</i>
+     * @throws  DirectoryNotEmptyException
+     *          the {@code REPLACE_EXISTING} option is specified but the file
+     *          cannot be replaced because it is a non-empty directory
+     *          <i>(optional specific exception)</i>
+     * @throws  AtomicMoveNotSupportedException
+     *          if the options array contains the {@code ATOMIC_MOVE} option but
+     *          the file cannot be moved as an atomic file system operation.
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to both the source and
+     *          target file.
+     */
+    public static Path files_move(Path source, Path target, CopyOption... options) throws IOException   {
+        FileSystemProvider provider = files_provider(source);
+        if (files_provider(target) == provider) {
+            // same provider
+            provider.move(source, target, options);
+        } else {
+            // different providers
+            CopyMoveHelper.moveToForeignTarget(source, target, options);
+        }
+        return target;
+    }
+    
+    /**
+     * Returns the {@code FileSystemProvider} to delegate to.
+     */
+    private static FileSystemProvider files_provider(Path path) {
+        return path.getFileSystem().provider();
+    }
+
+    /**
+     * Creates a directory by creating all nonexistent parent directories first.
+     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * is not thrown if the directory could not be created because it already
+     * exists.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the nonexistent
+     * directories. Each file attribute is identified by its {@link
+     * FileAttribute#name name}. If more than one attribute of the same name is
+     * included in the array then all but the last occurrence is ignored.
+     *
+     * <p> If this method fails, then it may do so after creating some, but not
+     * all, of the parent directories.
+     *
+     * @param   dir
+     *          the directory to create
+     *
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the directory
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  FileAlreadyExistsException
+     *          if {@code dir} exists but is not a directory <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          in the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked prior to attempting to create a directory and
+     *          its {@link SecurityManager#checkRead(String) checkRead} is
+     *          invoked for each parent directory that is checked. If {@code
+     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+     *          toAbsolutePath} may need to be invoked to get its absolute path.
+     *          This may invoke the security manager's {@link
+     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
+     *          method to check access to the system property {@code user.dir}
+     */
+    public static Path files_createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
+        // attempt to create the directory
+        try {
+            files_createAndCheckIsDirectory(dir, attrs);
+            return dir;
+        } catch (FileAlreadyExistsException x) {
+            // file exists and is not a directory
+            throw x;
+        } catch (IOException x) {
+            // parent may not exist or other reason
+        }
+        SecurityException se = null;
+        try {
+            dir = dir.toAbsolutePath();
+        } catch (SecurityException x) {
+            // don't have permission to get absolute path
+            se = x;
+        }
+        // find a decendent that exists
+        Path parent = dir.getParent();
+        while (parent != null) {
+            try {
+                files_provider(parent).checkAccess(parent);
+                break;
+            } catch (NoSuchFileException x) {
+                // does not exist
+            }
+            parent = parent.getParent();
+        }
+        if (parent == null) {
+            // unable to find existing parent
+            if (se == null) {
+                throw new FileSystemException(dir.toString(), null,
+                    "Unable to determine if root directory exists");
+            } else {
+                throw se;
+            }
+        }
+
+        // create directories
+        Path child = parent;
+        for (Path name: parent.relativize(dir)) {
+            child = child.resolve(name);
+            files_createAndCheckIsDirectory(child, attrs);
+        }
+        return dir;
+    }
+    
+
+    /**
+     * Used by createDirectories to attempt to create a directory. A no-op
+     * if the directory already exists.
+     */
+    private static void files_createAndCheckIsDirectory(Path dir, FileAttribute<?>... attrs) throws IOException{
+        try {
+            files_createDirectory(dir, attrs);
+        } catch (FileAlreadyExistsException x) {
+            if (!files_isDirectory(dir, LinkOption.NOFOLLOW_LINKS))
+                throw x;
+        }
+    }
+    
+    /**
+     * Creates a new directory. The check for the existence of the file and the
+     * creation of the directory if it does not exist are a single operation
+     * that is atomic with respect to all other filesystem activities that might
+     * affect the directory. The {@link #createDirectories createDirectories}
+     * method should be used where it is required to create all nonexistent
+     * parent directories first.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the directory. Each
+     * attribute is identified by its {@link FileAttribute#name name}. If more
+     * than one attribute of the same name is included in the array then all but
+     * the last occurrence is ignored.
+     *
+     * @param   dir
+     *          the directory to create
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the directory
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  FileAlreadyExistsException
+     *          if a directory could not otherwise be created because a file of
+     *          that name already exists <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs or the parent directory does not exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the new directory.
+     */
+    public static Path files_createDirectory(Path dir, FileAttribute<?>... attrs)
+        throws IOException
+    {
+        files_provider(dir).createDirectory(dir, attrs);
+        return dir;
+    }
+    
+    /**
+     * Tests whether a file is a directory.
+     *
+     * <p> The {@code options} array may be used to indicate how symbolic links
+     * are handled for the case that the file is a symbolic link. By default,
+     * symbolic links are followed and the file attribute of the final target
+     * of the link is read. If the option {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+     *
+     * <p> Where it is required to distinguish an I/O exception from the case
+     * that the file is not a directory then the file attributes can be
+     * read with the {@link #readAttributes(Path,Class,LinkOption[])
+     * readAttributes} method and the file type tested with the {@link
+     * BasicFileAttributes#isDirectory} method.
+     *
+     * @param   path
+     *          the path to the file to test
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  {@code true} if the file is a directory; {@code false} if
+     *          the file does not exist, is not a directory, or it cannot
+     *          be determined if the file is a directory or not.
+     *
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method denies read access to the file.
+     */
+    public static boolean files_isDirectory(Path path, LinkOption... options) {
+        try {
+            return readAttributes(path, BasicFileAttributes.class, options).isDirectory();
+        } catch (IOException ioe) {
+            return false;
+        }
+    }
+   
+    /**
+     * Creates an empty file in the default temporary-file directory, using
+     * the given prefix and suffix to generate its name. The resulting {@code
+     * Path} is associated with the default {@code FileSystem}.
+     *
+     * <p> This method works in exactly the manner specified by the
+     * {@link #createTempFile(Path,String,String,FileAttribute[])} method for
+     * the case that the {@code dir} parameter is the temporary-file directory.
+     *
+     * @param   prefix
+     *          the prefix string to be used in generating the file's name;
+     *          may be {@code null}
+     * @param   suffix
+     *          the suffix string to be used in generating the file's name;
+     *          may be {@code null}, in which case "{@code .tmp}" is used
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the file
+     *
+     * @return  the path to the newly created file that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix or suffix parameters cannot be used to generate
+     *          a candidate file name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or the temporary-file directory does not
+     *          exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the file.
+     */
+    public static Path files_createTempFile(String prefix, String suffix, FileAttribute<?>... attrs) throws IOException{
+        return TempFileHelper.createTempFile(null, prefix, suffix, attrs);
+    }
+    
+    /**
+     * Deletes a file.
+     *
+     * <p> An implementation may require to examine the file to determine if the
+     * file is a directory. Consequently this method may not be atomic with respect
+     * to other file system operations.  If the file is a symbolic link then the
+     * symbolic link itself, not the final target of the link, is deleted.
+     *
+     * <p> If the file is a directory then the directory must be empty. In some
+     * implementations a directory has entries for special files or links that
+     * are created when the directory is created. In such implementations a
+     * directory is considered empty when only the special entries exist.
+     * This method can be used with the {@link #walkFileTree walkFileTree}
+     * method to delete a directory and all entries in the directory, or an
+     * entire <i>file-tree</i> where required.
+     *
+     * <p> On some operating systems it may not be possible to remove a file when
+     * it is open and in use by this Java virtual machine or other programs.
+     *
+     * @param   path
+     *          the path to the file to delete
+     *
+     * @throws  NoSuchFileException
+     *          if the file does not exist <i>(optional specific exception)</i>
+     * @throws  DirectoryNotEmptyException
+     *          if the file is a directory and could not otherwise be deleted
+     *          because the directory is not empty <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkDelete(String)} method
+     *          is invoked to check delete access to the file
+     */
+    public static void files_delete(Path path) throws IOException {
+        files_provider(path).delete(path);
+    }
+    
+    /**
+     * Opens a file, returning an input stream to read from the file. The stream
+     * will not be buffered, and is not required to support the {@link
+     * InputStream#mark mark} or {@link InputStream#reset reset} methods. The
+     * stream will be safe for access by multiple concurrent threads. Reading
+     * commences at the beginning of the file. Whether the returned stream is
+     * <i>asynchronously closeable</i> and/or <i>interruptible</i> is highly
+     * file system provider specific and therefore not specified.
+     *
+     * <p> The {@code options} parameter determines how the file is opened.
+     * If no options are present then it is equivalent to opening the file with
+     * the {@link StandardOpenOption#READ READ} option. In addition to the {@code
+     * READ} option, an implementation may also support additional implementation
+     * specific options.
+     *
+     * @param   path
+     *          the path to the file to open
+     * @param   options
+     *          options specifying how the file is opened
+     *
+     * @return  a new input stream
+     *
+     * @throws  IllegalArgumentException
+     *          if an invalid combination of options is specified
+     * @throws  UnsupportedOperationException
+     *          if an unsupported option is specified
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the file.
+     */
+    public static InputStream files_newInputStream(Path path, OpenOption... options)
+        throws IOException
+    {
+        return files_provider(path).newInputStream(path, options);
+    }
+    
+    /**
+     * Returns the size of a file (in bytes). The size may differ from the
+     * actual size on the file system due to compression, support for sparse
+     * files, or other reasons. The size of files that are not {@link
+     * #isRegularFile regular} files is implementation specific and
+     * therefore unspecified.
+     *
+     * @param   path
+     *          the path to the file
+     *
+     * @return  the file size, in bytes
+     *
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method denies read access to the file.
+     *
+     * @see BasicFileAttributes#size
+     */
+    public static long files_size(Path path) throws IOException {
+        return readAttributes(path, BasicFileAttributes.class).size();
+    }
+    
+    /**
+     * Creates a new empty file in the specified directory, using the given
+     * prefix and suffix strings to generate its name. The resulting
+     * {@code Path} is associated with the same {@code FileSystem} as the given
+     * directory.
+     *
+     * <p> The details as to how the name of the file is constructed is
+     * implementation dependent and therefore not specified. Where possible
+     * the {@code prefix} and {@code suffix} are used to construct candidate
+     * names in the same manner as the {@link
+     * java.io.File#createTempFile(String,String,File)} method.
+     *
+     * <p> As with the {@code File.createTempFile} methods, this method is only
+     * part of a temporary-file facility. Where used as a <em>work files</em>,
+     * the resulting file may be opened using the {@link
+     * StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that the
+     * file is deleted when the appropriate {@code close} method is invoked.
+     * Alternatively, a {@link Runtime#addShutdownHook shutdown-hook}, or the
+     * {@link java.io.File#deleteOnExit} mechanism may be used to delete the
+     * file automatically.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the file. Each attribute
+     * is identified by its {@link FileAttribute#name name}. If more than one
+     * attribute of the same name is included in the array then all but the last
+     * occurrence is ignored. When no file attributes are specified, then the
+     * resulting file may have more restrictive access permissions to files
+     * created by the {@link java.io.File#createTempFile(String,String,File)}
+     * method.
+     *
+     * @param   dir
+     *          the path to directory in which to create the file
+     * @param   prefix
+     *          the prefix string to be used in generating the file's name;
+     *          may be {@code null}
+     * @param   suffix
+     *          the suffix string to be used in generating the file's name;
+     *          may be {@code null}, in which case "{@code .tmp}" is used
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the file
+     *
+     * @return  the path to the newly created file that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix or suffix parameters cannot be used to generate
+     *          a candidate file name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or {@code dir} does not exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the file.
+     */
+    public static Path files_reateTempFile(Path dir, String prefix, String suffix, FileAttribute<?>... attrs) throws IOException {
+        return TempFileHelper.createTempFile(Objects.requireNonNull(dir),
+                                             prefix, suffix, attrs);
+    }
+    
+    /**
+     * Creates a new directory in the default temporary-file directory, using
+     * the given prefix to generate its name. The resulting {@code Path} is
+     * associated with the default {@code FileSystem}.
+     *
+     * <p> This method works in exactly the manner specified by {@link
+     * #createTempDirectory(Path,String,FileAttribute[])} method for the case
+     * that the {@code dir} parameter is the temporary-file directory.
+     *
+     * @param   prefix
+     *          the prefix string to be used in generating the directory's name;
+     *          may be {@code null}
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the path to the newly created directory that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix cannot be used to generate a candidate directory name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or the temporary-file directory does not
+     *          exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access when creating the
+     *          directory.
+     */
+    public static Path files_createTempDirectory(String prefix, FileAttribute<?>... attrs) throws IOException {
+        return TempFileHelper.createTempDirectory(null, prefix, attrs);
+    }
+    
+    /**
+     * Creates a new empty file in the specified directory, using the given
+     * prefix and suffix strings to generate its name. The resulting
+     * {@code Path} is associated with the same {@code FileSystem} as the given
+     * directory.
+     *
+     * <p> The details as to how the name of the file is constructed is
+     * implementation dependent and therefore not specified. Where possible
+     * the {@code prefix} and {@code suffix} are used to construct candidate
+     * names in the same manner as the {@link
+     * java.io.File#createTempFile(String,String,File)} method.
+     *
+     * <p> As with the {@code File.createTempFile} methods, this method is only
+     * part of a temporary-file facility. Where used as a <em>work files</em>,
+     * the resulting file may be opened using the {@link
+     * StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that the
+     * file is deleted when the appropriate {@code close} method is invoked.
+     * Alternatively, a {@link Runtime#addShutdownHook shutdown-hook}, or the
+     * {@link java.io.File#deleteOnExit} mechanism may be used to delete the
+     * file automatically.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the file. Each attribute
+     * is identified by its {@link FileAttribute#name name}. If more than one
+     * attribute of the same name is included in the array then all but the last
+     * occurrence is ignored. When no file attributes are specified, then the
+     * resulting file may have more restrictive access permissions to files
+     * created by the {@link java.io.File#createTempFile(String,String,File)}
+     * method.
+     *
+     * @param   dir
+     *          the path to directory in which to create the file
+     * @param   prefix
+     *          the prefix string to be used in generating the file's name;
+     *          may be {@code null}
+     * @param   suffix
+     *          the suffix string to be used in generating the file's name;
+     *          may be {@code null}, in which case "{@code .tmp}" is used
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the file
+     *
+     * @return  the path to the newly created file that did not exist before
+     *          this method was invoked
+     *
+     * @throws  IllegalArgumentException
+     *          if the prefix or suffix parameters cannot be used to generate
+     *          a candidate file name
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  IOException
+     *          if an I/O error occurs or {@code dir} does not exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the file.
+     */
+    public static Path files_createTempFile(Path dir,
+                                      String prefix,
+                                      String suffix,
+                                      FileAttribute<?>... attrs)
+        throws IOException
+    {
+        return TempFileHelper.createTempFile(Objects.requireNonNull(dir),
+                                             prefix, suffix, attrs);
+    }
+    
+    /**
+     * Reads a file's attributes as a bulk operation.
+     *
+     * <p> The {@code type} parameter is the type of the attributes required
+     * and this method returns an instance of that type if supported. All
+     * implementations support a basic set of file attributes and so invoking
+     * this method with a  {@code type} parameter of {@code
+     * BasicFileAttributes.class} will not throw {@code
+     * UnsupportedOperationException}.
+     *
+     * <p> The {@code options} array may be used to indicate how symbolic links
+     * are handled for the case that the file is a symbolic link. By default,
+     * symbolic links are followed and the file attribute of the final target
+     * of the link is read. If the option {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+     *
+     * <p> It is implementation specific if all file attributes are read as an
+     * atomic operation with respect to other file system operations.
+     *
+     * <p> <b>Usage Example:</b>
+     * Suppose we want to read a file's attributes in bulk:
+     * <pre>
+     *    Path path = ...
+     *    BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+     * </pre>
+     * Alternatively, suppose we want to read file's POSIX attributes without
+     * following symbolic links:
+     * <pre>
+     *    PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
+     * </pre>
+     *
+     * @param   <A>
+     *          The {@code BasicFileAttributes} type
+     * @param   path
+     *          the path to the file
+     * @param   type
+     *          the {@code Class} of the file attributes required
+     *          to read
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  the file attributes
+     *
+     * @throws  UnsupportedOperationException
+     *          if an attributes of the given type are not supported
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the file. If this
+     *          method is invoked to read security sensitive attributes then the
+     *          security manager may be invoke to check for additional permissions.
+     */
+    public static <A extends BasicFileAttributes> A files_readAttributes(Path path,
+                                                                   Class<A> type,
+                                                                   LinkOption... options)
+        throws IOException
+    {
+        return files_provider(path).readAttributes(path, type, options);
+    }
+    
+    /**
+     * Deletes a file if it exists.
+     *
+     * <p> As with the {@link #delete(Path) delete(Path)} method, an
+     * implementation may need to examine the file to determine if the file is a
+     * directory. Consequently this method may not be atomic with respect to
+     * other file system operations.  If the file is a symbolic link, then the
+     * symbolic link itself, not the final target of the link, is deleted.
+     *
+     * <p> If the file is a directory then the directory must be empty. In some
+     * implementations a directory has entries for special files or links that
+     * are created when the directory is created. In such implementations a
+     * directory is considered empty when only the special entries exist.
+     *
+     * <p> On some operating systems it may not be possible to remove a file when
+     * it is open and in use by this Java virtual machine or other programs.
+     *
+     * @param   path
+     *          the path to the file to delete
+     *
+     * @return  {@code true} if the file was deleted by this method; {@code
+     *          false} if the file could not be deleted because it did not
+     *          exist
+     *
+     * @throws  DirectoryNotEmptyException
+     *          if the file is a directory and could not otherwise be deleted
+     *          because the directory is not empty <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkDelete(String)} method
+     *          is invoked to check delete access to the file.
+     */
+    public static boolean files_deleteIfExists(Path path) throws IOException {
+        return files_provider(path).deleteIfExists(path);
+    }
+
+
+
+    /**
+     * Tests whether a file exists.
+     *
+     * <p> The {@code options} parameter may be used to indicate how symbolic links
+     * are handled for the case that the file is a symbolic link. By default,
+     * symbolic links are followed. If the option {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+     *
+     * <p> Note that the result of this method is immediately outdated. If this
+     * method indicates the file exists then there is no guarantee that a
+     * subsequence access will succeed. Care should be taken when using this
+     * method in security sensitive applications.
+     *
+     * @param   path
+     *          the path to the file to test
+     * @param   options
+     *          options indicating how symbolic links are handled
+     * .
+     * @return  {@code true} if the file exists; {@code false} if the file does
+     *          not exist or its existence cannot be determined.
+     *
+     * @throws  SecurityException
+     *          In the case of the default provider, the {@link
+     *          SecurityManager#checkRead(String)} is invoked to check
+     *          read access to the file.
+     *
+     * @see #notExists
+     */
+    public static boolean files_exists(Path path, LinkOption... options) {
+        try {
+            if (files_followLinks(options)) {
+                files_provider(path).checkAccess(path);
+            } else {
+                // attempt to read attributes without following links
+                readAttributes(path, BasicFileAttributes.class,
+                               LinkOption.NOFOLLOW_LINKS);
+            }
+            // file exists
+            return true;
+        } catch (IOException x) {
+            // does not exist or unable to determine if file exists
+            return false;
+        }
+
+    }
+    
+    /**
+     * Returns {@code false} if NOFOLLOW_LINKS is present.
+     */
+    private static boolean files_followLinks(LinkOption... options) {
+        boolean followLinks = true;
+        for (LinkOption opt: options) {
+            if (opt == LinkOption.NOFOLLOW_LINKS) {
+                followLinks = false;
+                continue;
+            }
+            if (opt == null)
+                throw new NullPointerException();
+            throw new AssertionError("Should not get here");
+        }
+        return followLinks;
+    }
+
+    /**
+     * Reads all bytes from an input stream and writes them to an output stream.
+     */
+    protected static long files_copy(InputStream source, OutputStream sink)
+        throws IOException
+    {
+        long nread = 0L;
+        byte[] buf = new byte[files_BUFFER_SIZE];
+        int n;
+        while ((n = source.read(buf)) > 0) {
+            sink.write(buf, 0, n);
+            nread += n;
+        }
+        return nread;
+    }
+    
+    // buffer size used for reading and writing
+    private static final int files_BUFFER_SIZE = 8192;
+    
+    /**
+     * Creates a new and empty file, failing if the file already exists. The
+     * check for the existence of the file and the creation of the new file if
+     * it does not exist are a single operation that is atomic with respect to
+     * all other filesystem activities that might affect the directory.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the file. Each attribute
+     * is identified by its {@link FileAttribute#name name}. If more than one
+     * attribute of the same name is included in the array then all but the last
+     * occurrence is ignored.
+     *
+     * @param   path
+     *          the path to the file to create
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the file
+     *
+     * @return  the file
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the file
+     * @throws  FileAlreadyExistsException
+     *          if a file of that name already exists
+     *          <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs or the parent directory does not exist
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the new file.
+     */
+    public static Path files_createFile(Path path, FileAttribute<?>... attrs) throws IOException {
+        EnumSet<StandardOpenOption> options = EnumSet.<StandardOpenOption>of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+        files_newByteChannel(path, options, attrs).close();
+        return path;
+    }
+    
+    /**
+     * Opens or creates a file, returning a seekable byte channel to access the
+     * file.
+     *
+     * <p> The {@code options} parameter determines how the file is opened.
+     * The {@link StandardOpenOption#READ READ} and {@link
+     * StandardOpenOption#WRITE WRITE} options determine if the file should be
+     * opened for reading and/or writing. If neither option (or the {@link
+     * StandardOpenOption#APPEND APPEND} option) is present then the file is
+     * opened for reading. By default reading or writing commence at the
+     * beginning of the file.
+     *
+     * <p> In the addition to {@code READ} and {@code WRITE}, the following
+     * options may be present:
+     *
+     * <table border=1 cellpadding=5 summary="Options">
+     * <tr> <th>Option</th> <th>Description</th> </tr>
+     * <tr>
+     *   <td> {@link StandardOpenOption#APPEND APPEND} </td>
+     *   <td> If this option is present then the file is opened for writing and
+     *     each invocation of the channel's {@code write} method first advances
+     *     the position to the end of the file and then writes the requested
+     *     data. Whether the advancement of the position and the writing of the
+     *     data are done in a single atomic operation is system-dependent and
+     *     therefore unspecified. This option may not be used in conjunction
+     *     with the {@code READ} or {@code TRUNCATE_EXISTING} options. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardOpenOption#TRUNCATE_EXISTING TRUNCATE_EXISTING} </td>
+     *   <td> If this option is present then the existing file is truncated to
+     *   a size of 0 bytes. This option is ignored when the file is opened only
+     *   for reading. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardOpenOption#CREATE_NEW CREATE_NEW} </td>
+     *   <td> If this option is present then a new file is created, failing if
+     *   the file already exists or is a symbolic link. When creating a file the
+     *   check for the existence of the file and the creation of the file if it
+     *   does not exist is atomic with respect to other file system operations.
+     *   This option is ignored when the file is opened only for reading. </td>
+     * </tr>
+     * <tr>
+     *   <td > {@link StandardOpenOption#CREATE CREATE} </td>
+     *   <td> If this option is present then an existing file is opened if it
+     *   exists, otherwise a new file is created. This option is ignored if the
+     *   {@code CREATE_NEW} option is also present or the file is opened only
+     *   for reading. </td>
+     * </tr>
+     * <tr>
+     *   <td > {@link StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} </td>
+     *   <td> When this option is present then the implementation makes a
+     *   <em>best effort</em> attempt to delete the file when closed by the
+     *   {@link SeekableByteChannel#close close} method. If the {@code close}
+     *   method is not invoked then a <em>best effort</em> attempt is made to
+     *   delete the file when the Java virtual machine terminates. </td>
+     * </tr>
+     * <tr>
+     *   <td>{@link StandardOpenOption#SPARSE SPARSE} </td>
+     *   <td> When creating a new file this option is a <em>hint</em> that the
+     *   new file will be sparse. This option is ignored when not creating
+     *   a new file. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardOpenOption#SYNC SYNC} </td>
+     *   <td> Requires that every update to the file's content or metadata be
+     *   written synchronously to the underlying storage device. (see <a
+     *   href="package-summary.html#integrity"> Synchronized I/O file
+     *   integrity</a>). </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardOpenOption#DSYNC DSYNC} </td>
+     *   <td> Requires that every update to the file's content be written
+     *   synchronously to the underlying storage device. (see <a
+     *   href="package-summary.html#integrity"> Synchronized I/O file
+     *   integrity</a>). </td>
+     * </tr>
+     * </table>
+     *
+     * <p> An implementation may also support additional implementation specific
+     * options.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when a new file is created.
+     *
+     * <p> In the case of the default provider, the returned seekable byte channel
+     * is a {@link java.nio.channels.FileChannel}.
+     *
+     * <p> <b>Usage Examples:</b>
+     * <pre>
+     *     Path path = ...
+     *
+     *     // open file for reading
+     *     ReadableByteChannel rbc = Files.newByteChannel(path, EnumSet.of(READ)));
+     *
+     *     // open file for writing to the end of an existing file, creating
+     *     // the file if it doesn't already exist
+     *     WritableByteChannel wbc = Files.newByteChannel(path, EnumSet.of(CREATE,APPEND));
+     *
+     *     // create file with initial permissions, opening it for both reading and writing
+     *     {@code FileAttribute<Set<PosixFilePermission>> perms = ...}
+     *     SeekableByteChannel sbc = Files.newByteChannel(path, EnumSet.of(CREATE_NEW,READ,WRITE), perms);
+     * </pre>
+     *
+     * @param   path
+     *          the path to the file to open or create
+     * @param   options
+     *          options specifying how the file is opened
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the file
+     *
+     * @return  a new seekable byte channel
+     *
+     * @throws  IllegalArgumentException
+     *          if the set contains an invalid combination of options
+     * @throws  UnsupportedOperationException
+     *          if an unsupported open option is specified or the array contains
+     *          attributes that cannot be set atomically when creating the file
+     * @throws  FileAlreadyExistsException
+     *          if a file of that name already exists and the {@link
+     *          StandardOpenOption#CREATE_NEW CREATE_NEW} option is specified
+     *          <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the path if the file is
+     *          opened for reading. The {@link SecurityManager#checkWrite(String)
+     *          checkWrite} method is invoked to check write access to the path
+     *          if the file is opened for writing. The {@link
+     *          SecurityManager#checkDelete(String) checkDelete} method is
+     *          invoked to check delete access if the file is opened with the
+     *          {@code DELETE_ON_CLOSE} option.
+     *
+     * @see java.nio.channels.FileChannel#open(Path,Set,FileAttribute[])
+     */
+    public static SeekableByteChannel files_newByteChannel(Path path,
+                                                     Set<? extends OpenOption> options,
+                                                     FileAttribute<?>... attrs)
+        throws IOException
+    {
+        return files_provider(path).newByteChannel(path, options, attrs);
+    }
+    
+    /**
+     * Copy a file to a target file.
+     *
+     * <p> This method copies a file to the target file with the {@code
+     * options} parameter specifying how the copy is performed. By default, the
+     * copy fails if the target file already exists or is a symbolic link,
+     * except if the source and target are the {@link #isSameFile same} file, in
+     * which case the method completes without copying the file. File attributes
+     * are not required to be copied to the target file. If symbolic links are
+     * supported, and the file is a symbolic link, then the final target of the
+     * link is copied. If the file is a directory then it creates an empty
+     * directory in the target location (entries in the directory are not
+     * copied). This method can be used with the {@link #walkFileTree
+     * walkFileTree} method to copy a directory and all entries in the directory,
+     * or an entire <i>file-tree</i> where required.
+     *
+     * <p> The {@code options} parameter may include any of the following:
+     *
+     * <table border=1 cellpadding=5 summary="">
+     * <tr> <th>Option</th> <th>Description</th> </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
+     *   <td> If the target file exists, then the target file is replaced if it
+     *     is not a non-empty directory. If the target file exists and is a
+     *     symbolic link, then the symbolic link itself, not the target of
+     *     the link, is replaced. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#COPY_ATTRIBUTES COPY_ATTRIBUTES} </td>
+     *   <td> Attempts to copy the file attributes associated with this file to
+     *     the target file. The exact file attributes that are copied is platform
+     *     and file system dependent and therefore unspecified. Minimally, the
+     *     {@link BasicFileAttributes#lastModifiedTime last-modified-time} is
+     *     copied to the target file if supported by both the source and target
+     *     file stores. Copying of file timestamps may result in precision
+     *     loss. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS} </td>
+     *   <td> Symbolic links are not followed. If the file is a symbolic link,
+     *     then the symbolic link itself, not the target of the link, is copied.
+     *     It is implementation specific if file attributes can be copied to the
+     *     new link. In other words, the {@code COPY_ATTRIBUTES} option may be
+     *     ignored when copying a symbolic link. </td>
+     * </tr>
+     * </table>
+     *
+     * <p> An implementation of this interface may support additional
+     * implementation specific options.
+     *
+     * <p> Copying a file is not an atomic operation. If an {@link IOException}
+     * is thrown, then it is possible that the target file is incomplete or some
+     * of its file attributes have not been copied from the source file. When
+     * the {@code REPLACE_EXISTING} option is specified and the target file
+     * exists, then the target file is replaced. The check for the existence of
+     * the file and the creation of the new file may not be atomic with respect
+     * to other file system activities.
+     *
+     * <p> <b>Usage Example:</b>
+     * Suppose we want to copy a file into a directory, giving it the same file
+     * name as the source file:
+     * <pre>
+     *     Path source = ...
+     *     Path newdir = ...
+     *     Files.copy(source, newdir.resolve(source.getFileName());
+     * </pre>
+     *
+     * @param   source
+     *          the path to the file to copy
+     * @param   target
+     *          the path to the target file (may be associated with a different
+     *          provider to the source path)
+     * @param   options
+     *          options specifying how the copy should be done
+     *
+     * @return  the path to the target file
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains a copy option that is not supported
+     * @throws  FileAlreadyExistsException
+     *          if the target file exists but cannot be replaced because the
+     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *          specific exception)</i>
+     * @throws  DirectoryNotEmptyException
+     *          the {@code REPLACE_EXISTING} option is specified but the file
+     *          cannot be replaced because it is a non-empty directory
+     *          <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
+     *          method is invoked to check read access to the source file, the
+     *          {@link SecurityManager#checkWrite(String) checkWrite} is invoked
+     *          to check write access to the target file. If a symbolic link is
+     *          copied the security manager is invoked to check {@link
+     *          LinkPermission}{@code ("symbolic")}.
+     */
+    public static Path files_copy(Path source, Path target, CopyOption... options)
+        throws IOException
+    {
+        FileSystemProvider provider = files_provider(source);
+        if (files_provider(target) == provider) {
+            // same provider
+            provider.copy(source, target, options);
+        } else {
+            // different providers
+            CopyMoveHelper.copyToForeignTarget(source, target, options);
+        }
+        return target;
+    }
+    
+    /**
+     * Copies all bytes from an input stream to a file. On return, the input
+     * stream will be at end of stream.
+     *
+     * <p> By default, the copy fails if the target file already exists or is a
+     * symbolic link. If the {@link StandardCopyOption#REPLACE_EXISTING
+     * REPLACE_EXISTING} option is specified, and the target file already exists,
+     * then it is replaced if it is not a non-empty directory. If the target
+     * file exists and is a symbolic link, then the symbolic link is replaced.
+     * In this release, the {@code REPLACE_EXISTING} option is the only option
+     * required to be supported by this method. Additional options may be
+     * supported in future releases.
+     *
+     * <p>  If an I/O error occurs reading from the input stream or writing to
+     * the file, then it may do so after the target file has been created and
+     * after some bytes have been read or written. Consequently the input
+     * stream may not be at end of stream and may be in an inconsistent state.
+     * It is strongly recommended that the input stream be promptly closed if an
+     * I/O error occurs.
+     *
+     * <p> This method may block indefinitely reading from the input stream (or
+     * writing to the file). The behavior for the case that the input stream is
+     * <i>asynchronously closed</i> or the thread interrupted during the copy is
+     * highly input stream and file system provider specific and therefore not
+     * specified.
+     *
+     * <p> <b>Usage example</b>: Suppose we want to capture a web page and save
+     * it to a file:
+     * <pre>
+     *     Path path = ...
+     *     URI u = URI.create("http://java.sun.com/");
+     *     try (InputStream in = u.toURL().openStream()) {
+     *         Files.copy(in, path);
+     *     }
+     * </pre>
+     *
+     * @param   in
+     *          the input stream to read from
+     * @param   target
+     *          the path to the file
+     * @param   options
+     *          options specifying how the copy should be done
+     *
+     * @return  the number of bytes read or written
+     *
+     * @throws  IOException
+     *          if an I/O error occurs when reading or writing
+     * @throws  FileAlreadyExistsException
+     *          if the target file exists but cannot be replaced because the
+     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *          specific exception)</i>
+     * @throws  DirectoryNotEmptyException
+     *          the {@code REPLACE_EXISTING} option is specified but the file
+     *          cannot be replaced because it is a non-empty directory
+     *          <i>(optional specific exception)</i>     *
+     * @throws  UnsupportedOperationException
+     *          if {@code options} contains a copy option that is not supported
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the file. Where the
+     *          {@code REPLACE_EXISTING} option is specified, the security
+     *          manager's {@link SecurityManager#checkDelete(String) checkDelete}
+     *          method is invoked to check that an existing file can be deleted.
+     */
+    public static long files_copy(InputStream in, Path target, CopyOption... options)
+        throws IOException
+    {
+        // ensure not null before opening file
+        Objects.requireNonNull(in);
+
+        // check for REPLACE_EXISTING
+        boolean replaceExisting = false;
+        for (CopyOption opt: options) {
+            if (opt == StandardCopyOption.REPLACE_EXISTING) {
+                replaceExisting = true;
+            } else {
+                if (opt == null) {
+                    throw new NullPointerException("options contains 'null'");
+                }  else {
+                    throw new UnsupportedOperationException(opt + " not supported");
+                }
+            }
+        }
+
+        // attempt to delete an existing file
+        SecurityException se = null;
+        if (replaceExisting) {
+            try {
+                files_deleteIfExists(target);
+            } catch (SecurityException x) {
+                se = x;
+            }
+        }
+
+        // attempt to create target file. If it fails with
+        // FileAlreadyExistsException then it may be because the security
+        // manager prevented us from deleting the file, in which case we just
+        // throw the SecurityException.
+        OutputStream ostream;
+        try {
+            ostream = files_newOutputStream(target, StandardOpenOption.CREATE_NEW,
+                                              StandardOpenOption.WRITE);
+        } catch (FileAlreadyExistsException x) {
+            if (se != null)
+                throw se;
+            // someone else won the race and created the file
+            throw x;
+        }
+
+        // do the copy
+        try (OutputStream out = ostream) {
+            return files_copy(in, out);
+        }
+    }
+    
+    /**
+     * Opens or creates a file, returning an output stream that may be used to
+     * write bytes to the file. The resulting stream will not be buffered. The
+     * stream will be safe for access by multiple concurrent threads. Whether
+     * the returned stream is <i>asynchronously closeable</i> and/or
+     * <i>interruptible</i> is highly file system provider specific and
+     * therefore not specified.
+     *
+     * <p> This method opens or creates a file in exactly the manner specified
+     * by the {@link #newByteChannel(Path,Set,FileAttribute[]) newByteChannel}
+     * method with the exception that the {@link StandardOpenOption#READ READ}
+     * option may not be present in the array of options. If no options are
+     * present then this method works as if the {@link StandardOpenOption#CREATE
+     * CREATE}, {@link StandardOpenOption#TRUNCATE_EXISTING TRUNCATE_EXISTING},
+     * and {@link StandardOpenOption#WRITE WRITE} options are present. In other
+     * words, it opens the file for writing, creating the file if it doesn't
+     * exist, or initially truncating an existing {@link #isRegularFile
+     * regular-file} to a size of {@code 0} if it exists.
+     *
+     * <p> <b>Usage Examples:</b>
+     * <pre>
+     *     Path path = ...
+     *
+     *     // truncate and overwrite an existing file, or create the file if
+     *     // it doesn't initially exist
+     *     OutputStream out = Files.newOutputStream(path);
+     *
+     *     // append to an existing file, fail if the file does not exist
+     *     out = Files.newOutputStream(path, APPEND);
+     *
+     *     // append to an existing file, create file if it doesn't initially exist
+     *     out = Files.newOutputStream(path, CREATE, APPEND);
+     *
+     *     // always create new file, failing if it already exists
+     *     out = Files.newOutputStream(path, CREATE_NEW);
+     * </pre>
+     *
+     * @param   path
+     *          the path to the file to open or create
+     * @param   options
+     *          options specifying how the file is opened
+     *
+     * @return  a new output stream
+     *
+     * @throws  IllegalArgumentException
+     *          if {@code options} contains an invalid combination of options
+     * @throws  UnsupportedOperationException
+     *          if an unsupported option is specified
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to the file. The {@link
+     *          SecurityManager#checkDelete(String) checkDelete} method is
+     *          invoked to check delete access if the file is opened with the
+     *          {@code DELETE_ON_CLOSE} option.
+     */
+    public static OutputStream files_newOutputStream(Path path, OpenOption... options)
+        throws IOException
+    {
+        return files_provider(path).newOutputStream(path, options);
+    }
+    
+    /**
+     * Returns a file attribute view of a given type.
+     *
+     * <p> A file attribute view provides a read-only or updatable view of a
+     * set of file attributes. This method is intended to be used where the file
+     * attribute view defines type-safe methods to read or update the file
+     * attributes. The {@code type} parameter is the type of the attribute view
+     * required and the method returns an instance of that type if supported.
+     * The {@link BasicFileAttributeView} type supports access to the basic
+     * attributes of a file. Invoking this method to select a file attribute
+     * view of that type will always return an instance of that class.
+     *
+     * <p> The {@code options} array may be used to indicate how symbolic links
+     * are handled by the resulting file attribute view for the case that the
+     * file is a symbolic link. By default, symbolic links are followed. If the
+     * option {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS} is present then
+     * symbolic links are not followed. This option is ignored by implementations
+     * that do not support symbolic links.
+     *
+     * <p> <b>Usage Example:</b>
+     * Suppose we want read or set a file's ACL, if supported:
+     * <pre>
+     *     Path path = ...
+     *     AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
+     *     if (view != null) {
+     *         List&lt;AclEntry&gt; acl = view.getAcl();
+     *         :
+     *     }
+     * </pre>
+     *
+     * @param   <V>
+     *          The {@code FileAttributeView} type
+     * @param   path
+     *          the path to the file
+     * @param   type
+     *          the {@code Class} object corresponding to the file attribute view
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  a file attribute view of the specified type, or {@code null} if
+     *          the attribute view type is not available
+     */
+    public static <V extends FileAttributeView> V files_getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
+        return files_provider(path).getFileAttributeView(path, type, options);
+    }
+    
+    //////////////////// java.nio.file.Files ////////////////////
 
 }
+    
+
+
+
+
+
+
+
+//////////////////// java.nio.file.CopyMoveHelper ////////////////////
+
+
+/*
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ */
+
+/**
+ * Helper class to support copying or moving files when the source and target
+ * are associated with different providers.
+ */
+
+class CopyMoveHelper {
+	private CopyMoveHelper() { }
+
+	/**
+	 * Parses the arguments for a file copy operation.
+	 */
+	private static class CopyOptions {
+		boolean replaceExisting = false;
+		boolean copyAttributes = false;
+		boolean followLinks = true;
+
+		private CopyOptions() { }
+
+		static CopyOptions parse(CopyOption... options) {
+			CopyOptions result = new CopyOptions();
+			for (CopyOption option: options) {
+				if (option == StandardCopyOption.REPLACE_EXISTING) {
+					result.replaceExisting = true;
+					continue;
+				}
+				if (option == LinkOption.NOFOLLOW_LINKS) {
+					result.followLinks = false;
+					continue;
+				}
+				if (option == StandardCopyOption.COPY_ATTRIBUTES) {
+					result.copyAttributes = true;
+					continue;
+				}
+				if (option == null)
+					throw new NullPointerException();
+				throw new UnsupportedOperationException("'" + option +
+						"' is not a recognized copy option");
+			}
+			return result;
+		}
+	}
+
+	/**
+	 * Converts the given array of options for moving a file to options suitable
+	 * for copying the file when a move is implemented as copy + delete.
+	 */
+	private static CopyOption[] convertMoveToCopyOptions(CopyOption... options)
+			throws AtomicMoveNotSupportedException
+	{
+		int len = options.length;
+		CopyOption[] newOptions = new CopyOption[len+2];
+		for (int i=0; i<len; i++) {
+			CopyOption option = options[i];
+			if (option == StandardCopyOption.ATOMIC_MOVE) {
+				throw new AtomicMoveNotSupportedException(null, null,
+						"Atomic move between providers is not supported");
+			}
+			newOptions[i] = option;
+		}
+		newOptions[len] = LinkOption.NOFOLLOW_LINKS;
+		newOptions[len+1] = StandardCopyOption.COPY_ATTRIBUTES;
+		return newOptions;
+	}
+
+	/**
+	 * Simple copy for use when source and target are associated with different
+	 * providers
+	 */
+	static void copyToForeignTarget(Path source, Path target,
+			CopyOption... options)
+					throws IOException
+	{
+		CopyOptions opts = CopyOptions.parse(options);
+		LinkOption[] linkOptions = (opts.followLinks) ? new LinkOption[0] :
+			new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+
+		// attributes of source file
+		BasicFileAttributes attrs = FileTMJ.files_readAttributes(source,
+				BasicFileAttributes.class,
+				linkOptions);
+		if (attrs.isSymbolicLink())
+			throw new IOException("Copying of symbolic links not supported");
+
+		// delete target if it exists and REPLACE_EXISTING is specified
+		if (opts.replaceExisting) {
+			FileTMJ.files_deleteIfExists(target);
+		} else if (FileTMJ.files_exists(target))
+			throw new FileAlreadyExistsException(target.toString());
+
+		// create directory or copy file
+		if (attrs.isDirectory()) {
+			FileTMJ.files_createDirectory(target);
+		} else {
+			try (InputStream in = FileTMJ.files_newInputStream(source)) {
+				FileTMJ.files_copy(in, target);
+			}
+		}
+
+		// copy basic attributes to target
+		if (opts.copyAttributes) {
+			BasicFileAttributeView view =
+					FileTMJ.files_getFileAttributeView(target, BasicFileAttributeView.class);
+			try {
+				view.setTimes(attrs.lastModifiedTime(),
+						attrs.lastAccessTime(),
+						attrs.creationTime());
+			} catch (Throwable x) {
+				// rollback
+				try {
+					FileTMJ.files_delete(target);
+				} catch (Throwable suppressed) {
+					x.addSuppressed(suppressed);
+				}
+				throw x;
+			}
+		}
+	}
+
+	/**
+	 * Simple move implements as copy+delete for use when source and target are
+	 * associated with different providers
+	 */
+	static void moveToForeignTarget(Path source, Path target,
+			CopyOption... options) throws IOException
+	{
+		copyToForeignTarget(source, target, convertMoveToCopyOptions(options));
+		FileTMJ.files_delete(source);
+	}
+}
+
+////////////////////java.nio.file.CopyMoveHelper ////////////////////
+
+
+
+
+
+
+
+
+////////////////////java.nio.file.TempFileHelper ////////////////////
+
+/*
+ * Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+ * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ */
+
+
+
+/**
+ * Helper class to support creation of temporary files and directories with
+ * initial attributes.
+ */
+
+class TempFileHelper {
+    private TempFileHelper() { }
+
+    // temporary directory location
+    private static final Path tmpdir =
+        Paths.get(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
+
+    private static final boolean isPosix =
+        FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+
+    // file name generation, same as java.io.File for now
+    private static final SecureRandom random = new SecureRandom();
+    private static Path generatePath(String prefix, String suffix, Path dir) {
+        long n = random.nextLong();
+        n = (n == Long.MIN_VALUE) ? 0 : Math.abs(n);
+        Path name = dir.getFileSystem().getPath(prefix + Long.toString(n) + suffix);
+        // the generated name should be a simple file name
+        if (name.getParent() != null)
+            throw new IllegalArgumentException("Invalid prefix or suffix");
+        return dir.resolve(name);
+    }
+
+    // default file and directory permissions (lazily initialized)
+    private static class PosixPermissions {
+        static final FileAttribute<Set<PosixFilePermission>> filePermissions =
+            PosixFilePermissions.asFileAttribute(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+        static final FileAttribute<Set<PosixFilePermission>> dirPermissions =
+            PosixFilePermissions.asFileAttribute(EnumSet
+                .of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE));
+    }
+
+    /**
+     * Creates a file or directory in in the given given directory (or in the
+     * temporary directory if dir is {@code null}).
+     */
+    private static Path create(Path dir,
+                               String prefix,
+                               String suffix,
+                               boolean createDirectory,
+                               FileAttribute<?>[] attrs)
+        throws IOException
+    {
+        if (prefix == null)
+            prefix = "";
+        if (suffix == null)
+            suffix = (createDirectory) ? "" : ".tmp";
+        if (dir == null)
+            dir = tmpdir;
+
+        // in POSIX environments use default file and directory permissions
+        // if initial permissions not given by caller.
+        if (isPosix && (dir.getFileSystem() == FileSystems.getDefault())) {
+            if (attrs.length == 0) {
+                // no attributes so use default permissions
+                attrs = new FileAttribute<?>[1];
+                attrs[0] = (createDirectory) ? PosixPermissions.dirPermissions :
+                                               PosixPermissions.filePermissions;
+            } else {
+                // check if posix permissions given; if not use default
+                boolean hasPermissions = false;
+                for (int i=0; i<attrs.length; i++) {
+                    if (attrs[i].name().equals("posix:permissions")) {
+                        hasPermissions = true;
+                        break;
+                    }
+                }
+                if (!hasPermissions) {
+                    FileAttribute<?>[] copy = new FileAttribute<?>[attrs.length+1];
+                    System.arraycopy(attrs, 0, copy, 0, attrs.length);
+                    attrs = copy;
+                    attrs[attrs.length-1] = (createDirectory) ?
+                        PosixPermissions.dirPermissions :
+                        PosixPermissions.filePermissions;
+                }
+            }
+        }
+
+        // loop generating random names until file or directory can be created
+        SecurityManager sm = System.getSecurityManager();
+        for (;;) {
+            Path f;
+            try {
+                f = generatePath(prefix, suffix, dir);
+            } catch (InvalidPathException e) {
+                // don't reveal temporary directory location
+                if (sm != null)
+                    throw new IllegalArgumentException("Invalid prefix or suffix");
+                throw e;
+            }
+            try {
+                if (createDirectory) {
+                    return FileTMJ.files_createDirectory(f, attrs);
+                } else {
+                    return FileTMJ.files_createFile(f, attrs);
+                }
+            } catch (SecurityException e) {
+                // don't reveal temporary directory location
+                if (dir == tmpdir && sm != null)
+                    throw new SecurityException("Unable to create temporary file or directory");
+                throw e;
+            } catch (FileAlreadyExistsException e) {
+                // ignore
+            }
+        }
+    }
+
+    /**
+     * Creates a temporary file in the given directory, or in in the
+     * temporary directory if dir is {@code null}.
+     */
+    static Path createTempFile(Path dir,
+                               String prefix,
+                               String suffix,
+                               FileAttribute<?>[] attrs)
+        throws IOException
+    {
+        return create(dir, prefix, suffix, false, attrs);
+    }
+
+    /**
+     * Creates a temporary directory in the given directory, or in in the
+     * temporary directory if dir is {@code null}.
+     */
+    static Path createTempDirectory(Path dir,
+                                    String prefix,
+                                    FileAttribute<?>[] attrs)
+        throws IOException
+    {
+        return create(dir, prefix, null, true, attrs);
+    }
+}
+
+////////////////////java.nio.file.TempFileHelper ////////////////////
+
+
+
