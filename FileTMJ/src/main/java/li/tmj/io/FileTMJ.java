@@ -269,775 +269,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     }
 
 	
-	
-
-
-    
-    /**
-     * Tests whether this file/directory exists.
-     *
-     * @return  <code>true</code> if and only if the file or directory denoted
-     *          by this abstract pathname exists; <code>false</code> otherwise
-     *
-     * @throws  SecurityException
-     *          If a security manager exists and its <code>{@link
-     *          java.lang.SecurityManager#checkRead(java.lang.String)}</code>
-     *          method denies read access to the file or directory
-     */
-//        SecurityManager security = System.getSecurityManager();
-//        if (security != null) {
-//            security.checkRead(path);
-//        }
-//        if (isInvalid()) {
-//            return false;
-//        }
-//        return ((fs.getBooleanAttributes(this) & FileSystem.BA_EXISTS) != 0);
-    /**
-     * Tests whether the file/directory exists.
-     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
-     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
-     * NOFOLLOW_LINKS} then symbolic links are followed.
-     *
-     * <p> Note that the result of this method is immediately outdated. If this
-     * method indicates the file exists then there is no guarantee that a
-     * subsequence access will succeed. Care should be taken when using this
-     * method in security sensitive applications.
-     *
-     * @param   options
-     *          options indicating how symbolic links are handled
-     * 
-     * @return  {@code true} if the file exists; {@code false} if the file does
-     *          not exist.
-     *
-     * @throws  SecurityException
-     *          If a {@link SecurityManager} prohibits the test.
-     */
-    public boolean exists() throws SecurityException{
-    	return exists(LinkOption.NOFOLLOW_LINKS);
-    }
-    public boolean exists(LinkOption... linkOptions) throws SecurityException{
-		try {
-			readBasicFileAttributes(dataForkPath, linkOptions); // file exists
-			return true;
-		} catch (IOException e) { // does not exist or unable to determine if file exists
-			try {
-				readBasicFileAttributes(resourceForkPath, linkOptions); // file exists
-				return true;
-			} catch (IOException e2) { // does not exist or unable to determine if file exists
-				return false;
-			}
-		}
-    }
-
-//    /**
-//     * Tests whether the file located by this path does not exist. This method
-//     * is intended for cases where it is required to take action when it can be
-//     * confirmed that a file does not exist.
-//     *
-//     * <p> The {@code options} parameter may be used to indicate how symbolic links
-//     * are handled for the case that the file is a symbolic link. By default,
-//     * symbolic links are followed. If the option {@link LinkOption#NOFOLLOW_LINKS
-//     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
-//     *
-//     * <p> Note that this method is not the complement of the {@link #exists
-//     * exists} method. Where it is not possible to determine if a file exists
-//     * or not then both methods return {@code false}. As with the {@code exists}
-//     * method, the result of this method is immediately outdated. If this
-//     * method indicates the file does exist then there is no guarantee that a
-//     * subsequence attempt to create the file will succeed. Care should be taken
-//     * when using this method in security sensitive applications.
-//     *
-//     * @param   path
-//     *          the path to the file to test
-//     * @param   options
-//     *          options indicating how symbolic links are handled
-//     *
-//     * @return  {@code true} if the file does not exist; {@code false} if the
-//     *          file exists or its existence cannot be determined
-//     *
-//     * @throws  SecurityException
-//     *          In the case of the default provider, the {@link
-//     *          SecurityManager#checkRead(String)} is invoked to check
-//     *          read access to the file.
-//     */
-//    public static boolean notExists(Path path, LinkOption... options) {
-//    	throw new RuntimeException("Method not implemented, yet!"); //TODO IMPLEMENT!
-////        try {
-////            if (followLinks(options)) {
-////                provider(path).checkAccess(path);
-////            } else {
-////                // attempt to read attributes without following links
-////                readAttributes(path, BasicFileAttributes.class,
-////                               LinkOption.NOFOLLOW_LINKS);
-////            }
-////            // file exists
-////            return false;
-////        } catch (NoSuchFileException x) {
-////            // file confirmed not to exist
-////            return true;
-////        } catch (IOException x) {
-////            return false;
-////        }
-//    }
-    
-    /**
-     * Tests whether the object is an existing directory.
-     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
-     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
-     * NOFOLLOW_LINKS} then symbolic links are followed.
-     *
-     * <p> Where it is required to distinguish an I/O exception from the case
-     * that the file is not a directory, or where several attributes of the
-     * same file are required at the same time, then the {@link
-     * java.nio.file.Files#readAttributes(Path,Class,LinkOption[])
-     * Files.readAttributes} method may be used.
-     *
-     * @param   options
-     *          options indicating how symbolic links are handled
-     *
-     * @return  {@code true} if the file an existing directory,
-     *          {@code false} otherwise
-     *
-     * @throws  SecurityException
-     *          If a security manager denies read access to the file
-     */
-	public boolean isDirectory() {
-		return isDirectory(LinkOption.NOFOLLOW_LINKS);
-	}
-	public boolean isDirectory(LinkOption... linkOptions) {
-//		return java.nio.file.Files.isDirectory(dataForkPath, linkOptions);
-        try {
-        	return readBasicFileAttributes(dataForkPath, linkOptions).isDirectory();
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
-
-    /**
-     * Tests whether the object is an existing directory.
-     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
-     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
-     * NOFOLLOW_LINKS} then symbolic links are followed.
-     *
-     * <p> Where it is required to distinguish an I/O exception from the case
-     * that the file is not a regular file then the file attributes can be
-     * read with the {@link #readAttributes(Path,Class,LinkOption[])
-     * readAttributes} method and the file type tested with the {@link
-     * BasicFileAttributes#isRegularFile} method.
-     *
-     * @param   options
-     *          options indicating how symbolic links are handled
-     *
-     * @return  {@code true} if the file an existing regular file,
-     *          {@code false} otherwise
-     *
-     * @throws  SecurityException
-     *          If a security manager denies read access to the file
-     */
-	public boolean isRegularFile() {
-		return isRegularFile(LinkOption.NOFOLLOW_LINKS);
-	}
-	public boolean isRegularFile(LinkOption... linkOptions) {
-//		return java.nio.file.Files.isRegularFile(dataForkPath, linkOptions);
-        try {
-        	return readBasicFileAttributes(dataForkPath, linkOptions).isRegularFile();
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
-    
-	public String extension() {
-		return extension(dataForkPath);
-	}
-	public static String extension(Path path) { // returns extension, if any
-		Path p=path.getFileName();
-		if(null==p) {
-			return null;
-		}
-		int i = p.toString().lastIndexOf('.');
-		if(i<0) {return "";}
-	    return p.toString().substring(i+1);
-	}
-
-	/**
-	 * file system directory that is normally displayed to the user by the Finder as if it were a single file. 
-	 * com.apple.package
-	 * .rtfd, bundle .app, dashboard widget, .download, FCP .fcarch, project files GarageBand, Keynote, Pages, Numbers, iMovie, Xcode; Installer packages
-	 * To register a document as a package, you must modify the document type information in your application’s information property list (Info.plist) file.
-	 * The CFBundleDocumentTypes key stores information about the document types your application supports. For each document package type, include the 
-	 * LSTypeIsPackage key with an appropriate value. The presence of this key tells the Finder and Launch Services to treat directories with the given file 
-	 * extension as a package. For more information about Info.plist keys, see Information Property List Key Reference.
-	 * Document packages should always have an extension to identify them—even though that extension may be hidden by the user. The extension allows the Finder 
-	 * to identify your document directory and treat it as a package. You should never associate a document package with a MIME type or 4-byte OS type.
-	 * 
-	 * package if any of:
-	 * has a known filename extension.
-	 * has an extension of registered Document Packages.
-	 * has its package bit set.
-	 */
-	public boolean isPackage() {
-		return isPackage( extension() );
-	}
-	
-	private static boolean isPackage(String extension) {
-		switch(extension) {
-			case "": return false; // no package
-			case "app": // known package extensions
-			case "bundle":
-			case "framework":
-			case "plugin":
-			case "kext":
-			case "lproj": // localization files
-				return true; 
-			default: return false; // no package found
-		}
-	}
-
-	public boolean isEmpty() throws SecurityException, IOException {
-		return 0==sizeBytes();
-	}
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-    /**
-	 * Returns the <em>root</em> {@code FileTMJ} of this file,
-	 * or {@code null} if there is none.
-	 *
-	 * @return  a FileTMJ representing the root component of this file, or {@code null}
-	 */
-	public FileTMJ getRoot(){
-		Path root=dataForkPath.getRoot();
-		if(null==root) {
-			return null;
-		}
-		return new FileTMJ(root);
-	}
-
-	/**
-	 * Returns the <em>name</em> of the file or directory denoted by this file as a
-	 * {@code String} object. The file name is the <em>farthest</em> element from
-	 * the root in the directory hierarchy.
-	 *
-	 * @return  a String representing the name of the file or directory, or
-	 *          {@code null} if this file has zero elements
-	 */
-	public String getFileName(){
-		return dataForkPath.getFileName().toString();// root -> null
-//		return dataForkPath.toFile().getName();//root -> ""
-	}
-  /**
-   * @return  The name of the file or directory denoted by this abstract
-   *          pathname, or the empty string if this pathname's name sequence
-   *          is empty
-   */
-
-  /**
-   * Ignores the macOS Fork-Duality.
-   * Returns a {@link Path} representing this file's path. The resulting path is associated with the
-   * {@link java.nio.file.FileSystems#getDefault default-filesystem}.
-   * The resulting
-   * string uses the {@link #separator default name-separator character} to
-   * separate the names in the name sequence.
-   *
-   * @return  The string form of this abstract pathname
-   * @throws  java.nio.file.InvalidPathException
-   *          if a {@code Path} object cannot be constructed from the abstract
-   *          file (see {@link java.nio.file.FileSystem#getPath FileSystem.getPath})
-   */
-  public Path getPath() {
-	  return dataForkPath;
-  }
-  public String getPathString() {
-	  return dataForkPath.toString();
-  }
-  
-  
-  /**
-   * Returns a path that is this path with redundant name elements eliminated.
-   *
-   * <p> The precise definition of this method is implementation dependent but
-   * in general it derives from this path, a path that does not contain
-   * <em>redundant</em> name elements. In many file systems, the "{@code .}"
-   * and "{@code ..}" are special names used to indicate the current directory
-   * and parent directory. In such file systems all occurrences of "{@code .}"
-   * are considered redundant. If a "{@code ..}" is preceded by a
-   * non-"{@code ..}" name then both names are considered redundant (the
-   * process to identify such names is repeated until it is no longer
-   * applicable).
-   *
-   * <p> This method does not access the file system; the path may not locate
-   * a file that exists. Eliminating "{@code ..}" and a preceding name from a
-   * path may result in the path that locates a different file than the original
-   * path. This can arise when the preceding name is a symbolic link.
-   *
-   * @return  the resulting path or this path if it does not contain
-   *          redundant name elements; an empty path is returned if this path
-   *          does have a root component and all name elements are redundant
-   *
-   * @see #getParent
-   * @see #toRealPath
-   */
-  /**
-   * Normalizes this URI's path.
-   *
-   * <p> If this URI is opaque, or if its path is already in normal form,
-   * then this URI is returned.  Otherwise a new URI is constructed that is
-   * identical to this URI except that its path is computed by normalizing
-   * this URI's path in a manner consistent with <a
-   * href="http://www.ietf.org/rfc/rfc2396.txt">RFC&nbsp;2396</a>,
-   * section&nbsp;5.2, step&nbsp;6, sub-steps&nbsp;c through&nbsp;f; that is:
-   * </p>
-   *
-   * <ol>
-   *
-   *   <li><p> All {@code "."} segments are removed. </p></li>
-   *
-   *   <li><p> If a {@code ".."} segment is preceded by a non-{@code ".."}
-   *   segment then both of these segments are removed.  This step is
-   *   repeated until it is no longer applicable. </p></li>
-   *
-   *   <li><p> If the path is relative, and if its first segment contains a
-   *   colon character ({@code ':'}), then a {@code "."} segment is
-   *   prepended.  This prevents a relative URI with a path such as
-   *   {@code "a:b/c/d"} from later being re-parsed as an opaque URI with a
-   *   scheme of {@code "a"} and a scheme-specific part of {@code "b/c/d"}.
-   *   <b><i>(Deviation from RFC&nbsp;2396)</i></b> </p></li>
-   *
-   * </ol>
-   *
-   * <p> A normalized path will begin with one or more {@code ".."} segments
-   * if there were insufficient non-{@code ".."} segments preceding them to
-   * allow their removal.  A normalized path will begin with a {@code "."}
-   * segment if one was inserted by step 3 above.  Otherwise, a normalized
-   * path will not contain any {@code "."} or {@code ".."} segments. </p>
-   *
-   * @return  A URI equivalent to this URI,
-   *          but whose path is in normal form
-   */
-  public Path toNormalized() {
-	  return dataForkPath.normalize();
-  }
-  /**
-   * Returns {@code toNormalized} and changes the internal path representation of this FileTMJ accordingly.
-   * @return
-   */
-  public Path normalize() {
-	  init(toNormalized());
-	  return dataForkPath;
-  }
-
-
-
-  /**
-   * Tells whether or not this path is absolute.
-   *
-   * <p> An absolute path is complete in that it doesn't need to be combined
-   * with other path information in order to locate a file.
-   *
-   * @return  {@code true} if, and only if, this path is absolute
-   */
-  /**
-   * Tests whether this abstract pathname is absolute.  The definition of
-   * absolute pathname is system dependent.  On UNIX systems, a pathname is
-   * absolute if its prefix is <code>"/"</code>.  On Microsoft Windows systems, a
-   * pathname is absolute if its prefix is a drive specifier followed by
-   * <code>"\\"</code>, or if its prefix is <code>"\\\\"</code>.
-   *
-   * @return  <code>true</code> if this abstract pathname is absolute,
-   *          <code>false</code> otherwise
-   */
-  /**
-   * Tells whether or not this URI is absolute.
-   *
-   * <p> A URI is absolute if, and only if, it has a scheme component. </p>
-   *
-   * @return  {@code true} if, and only if, this URI is absolute
-   */
-  public boolean isAbsolute() {
-	  return dataForkPath.isAbsolute();
-//      return scheme != null;
-  }
-  
-
-  
-  /**
-   * Returns a {@code Path} object representing the absolute path of this
-   * path.
-   *
-   * <p> If this path is already {@link Path#isAbsolute absolute} then this
-   * method simply returns this path. Otherwise, this method resolves the path
-   * in an implementation dependent manner, typically by resolving the path
-   * against a file system default directory. Depending on the implementation,
-   * this method may throw an I/O error if the file system is not accessible.
-   *
-   * @return  a {@code Path} object representing the absolute path
-   *
-   * @throws  java.io.IOError
-   *          if an I/O error occurs
-   * @throws  SecurityException
-   *          In the case of the default provider, a security manager
-   *          is installed, and this path is not absolute, then the security
-   *          manager's {@link SecurityManager#checkPropertyAccess(String)
-   *          checkPropertyAccess} method is invoked to check access to the
-   *          system property {@code user.dir}
-   */
-  /**
-   * Returns the absolute pathname string of this abstract pathname.
-   *
-   * <p> If this abstract pathname is already absolute, then the pathname
-   * string is simply returned as if by the <code>{@link #getPath}</code>
-   * method.  If this abstract pathname is the empty abstract pathname then
-   * the pathname string of the current user directory, which is named by the
-   * system property <code>user.dir</code>, is returned.  Otherwise this
-   * pathname is resolved in a system-dependent way.  On UNIX systems, a
-   * relative pathname is made absolute by resolving it against the current
-   * user directory.  On Microsoft Windows systems, a relative pathname is made absolute
-   * by resolving it against the current directory of the drive named by the
-   * pathname, if any; if not, it is resolved against the current user
-   * directory.
-   *
-   * @return  The absolute pathname string denoting the same file or
-   *          directory as this abstract pathname
-   *
-   * @throws  SecurityException
-   *          If a required system property value cannot be accessed.
-   *
-   * @see     java.io.File#isAbsolute()
-   */
-  /**
-   * Returns the absolute form of this abstract pathname.  Equivalent to
-   * <code>new&nbsp;File(this.{@link #getAbsolutePath})</code>.
-   *
-   * @return  The absolute abstract pathname denoting the same file or
-   *          directory as this abstract pathname
-   *
-   * @throws  SecurityException
-   *          If a required system property value cannot be accessed.
-   *
-   * @since 1.2
-   */
-  public Path toAbsolutePath() {
-	  return dataForkPath.toAbsolutePath();
-  }
-  /**
-   * Returns {@code toAbsolutePath} and changes the internal path representation of this FileTMJ accordingly.
-   * @return
-   */
-  public Path absolutize() {
-	  init(toAbsolutePath());
-	  return dataForkPath;
-  }
-
-  /**
-   * Returns the <em>real</em> path of an existing file.
-   *
-   * <p> The precise definition of this method is implementation dependent but
-   * in general it derives from this path, an {@link #isAbsolute absolute}
-   * path that locates the {@link Files#isSameFile same} file as this path, but
-   * with name elements that represent the actual name of the directories
-   * and the file. For example, where filename comparisons on a file system
-   * are case insensitive then the name elements represent the names in their
-   * actual case. Additionally, the resulting path has redundant name
-   * elements removed.
-   *
-   * <p> If this path is relative then its absolute path is first obtained,
-   * as if by invoking the {@link #toAbsolutePath toAbsolutePath} method.
-   *
-   * <p> The {@code options} array may be used to indicate how symbolic links
-   * are handled. By default, symbolic links are resolved to their final
-   * target. If the option {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS} is
-   * present then this method does not resolve symbolic links.
-   *
-   * Some implementations allow special names such as "{@code ..}" to refer to
-   * the parent directory. When deriving the <em>real path</em>, and a
-   * "{@code ..}" (or equivalent) is preceded by a non-"{@code ..}" name then
-   * an implementation will typically cause both names to be removed. When
-   * not resolving symbolic links and the preceding name is a symbolic link
-   * then the names are only removed if it guaranteed that the resulting path
-   * will locate the same file as this path.
-   *
-   * @param   options
-   *          options indicating how symbolic links are handled
-   *
-   * @return  an absolute path represent the <em>real</em> path of the file
-   *          located by this object
-   *
-   * @throws  IOException
-   *          if the file does not exist or an I/O error occurs
-   * @throws  SecurityException
-   *          In the case of the default provider, and a security manager
-   *          is installed, its {@link SecurityManager#checkRead(String) checkRead}
-   *          method is invoked to check read access to the file, and where
-   *          this path is not absolute, its {@link SecurityManager#checkPropertyAccess(String)
-   *          checkPropertyAccess} method is invoked to check access to the
-   *          system property {@code user.dir}
-   */
-  public Path toRealPath(LinkOption... options) throws IOException{
-	  return dataForkPath.toRealPath(options);
-}
-/**
- * Returns {@code toRealPath} and changes the internal path representation of this FileTMJ accordingly.
- * @return
- * @throws IOException 
- */
-  public Path realize(LinkOption... options) throws IOException {
-	  init(toRealPath(options));
-	  return dataForkPath;
-  }
-
-/**
- * Returns the canonical pathname string of this abstract pathname.
- *
- * <p> A canonical pathname is both absolute and unique.  The precise
- * definition of canonical form is system-dependent.  This method first
- * converts this pathname to absolute form if necessary, as if by invoking the
- * {@link #getAbsolutePath} method, and then maps it to its unique form in a
- * system-dependent way.  This typically involves removing redundant names
- * such as <tt>"."</tt> and <tt>".."</tt> from the pathname, resolving
- * symbolic links (on UNIX platforms), and converting drive letters to a
- * standard case (on Microsoft Windows platforms).
- *
- * <p> Every pathname that denotes an existing file or directory has a
- * unique canonical form.  Every pathname that denotes a nonexistent file
- * or directory also has a unique canonical form.  The canonical form of
- * the pathname of a nonexistent file or directory may be different from
- * the canonical form of the same pathname after the file or directory is
- * created.  Similarly, the canonical form of the pathname of an existing
- * file or directory may be different from the canonical form of the same
- * pathname after the file or directory is deleted.
- *
- * @return  The canonical pathname string denoting the same file or
- *          directory as this abstract pathname
- *
- * @throws  IOException
- *          If an I/O error occurs, which is possible because the
- *          construction of the canonical pathname may require
- *          filesystem queries
- *
- * @throws  SecurityException
- *          If a required system property value cannot be accessed, or
- *          if a security manager exists and its <code>{@link
- *          java.lang.SecurityManager#checkRead}</code> method denies
- *          read access to the file
- *
- * @since   JDK1.1
- * @see     Path#toRealPath
- */
-/**
- * Returns the canonical form of this abstract pathname.  Equivalent to
- * <code>new&nbsp;File(this.{@link #getCanonicalPath})</code>.
- *
- * @return  The canonical pathname string denoting the same file or
- *          directory as this abstract pathname
- *
- * @throws  IOException
- *          If an I/O error occurs, which is possible because the
- *          construction of the canonical pathname may require
- *          filesystem queries
- *
- * @throws  SecurityException
- *          If a required system property value cannot be accessed, or
- *          if a security manager exists and its <code>{@link
- *          java.lang.SecurityManager#checkRead}</code> method denies
- *          read access to the file
- *
- * @since 1.2
- * @see     Path#toRealPath
- */
-  public Path toCanonicalPath() throws IOException {
-//	  return Paths.get(toCanonicalPathString());
-	  return fileSystem.getPath(toCanonicalPathString());
-//    if (isInvalid()) {
-//        throw new IOException("Invalid file path");
-//    }
-//    return fs.canonicalize(fs.resolve(this));
-//    String canonPath = getCanonicalPath();
-//    return new File(canonPath, fs.prefixLength(canonPath));
-  }
-  public String toCanonicalPathString() throws IOException {
-	  return dataForkPath.toFile().getCanonicalPath();
-  }
- 
-/**
- * ignores the duality of the macOS forks.
- * @return
- */
-  public File toFile(){
-		return dataForkPath.toFile();
-  }
- 
-  /**
-   * ignores the duality of the macOS forks.
-   * @return
-   */
-	public Path toPath() {
-		return dataForkPath;
-	}
-
-
-	 /**
-     * Returns a URI to represent this file/directory.
-     *
-     * <p> This method constructs an absolute {@link URI} with a {@link
-     * URI#getScheme() scheme} equal to the URI scheme that identifies the
-     * provider. The exact form of the scheme specific part is highly provider
-     * dependent.
-     *
-     * <p> In the case of the default provider, the URI is hierarchical with
-     * a {@link URI#getPath() path} component that is absolute. The query and
-     * fragment components are undefined. Whether the authority component is
-     * defined or not is implementation dependent. There is no guarantee that
-     * the {@code URI} may be used to construct a {@link java.io.File java.io.File}.
-     * In particular, if this path represents a Universal Naming Convention (UNC)
-     * path, then the UNC server name may be encoded in the authority component
-     * of the resulting URI. In the case of the default provider, and the file
-     * exists, and it can be determined that the file is a directory, then the
-     * resulting {@code URI} will end with a slash.
-     *
-     * <p> The default provider provides a similar <em>round-trip</em> guarantee
-     * to the {@link java.io.File} class. For a given {@code Path} <i>p</i> it
-     * is guaranteed that
-     * <blockquote><tt>
-     * {@link Paths#get(URI) Paths.get}(</tt><i>p</i><tt>.toUri()).equals(</tt><i>p</i>
-     * <tt>.{@link #toAbsolutePath() toAbsolutePath}())</tt>
-     * </blockquote>
-     * so long as the original {@code Path}, the {@code URI}, and the new {@code
-     * Path} are all created in (possibly different invocations of) the same
-     * Java virtual machine. Whether other providers make any guarantees is
-     * provider specific and therefore unspecified.
-     *
-     * <p> When a file system is constructed to access the contents of a file
-     * as a file system then it is highly implementation specific if the returned
-     * URI represents the given path in the file system or it represents a
-     * <em>compound</em> URI that encodes the URI of the enclosing file system.
-     * A format for compound URIs is not defined in this release; such a scheme
-     * may be added in a future release.
-     *
-     * @return  the URI representing this path
-     *
-     * @throws  java.io.IOError
-     *          if an I/O error occurs obtaining the absolute path, or where a
-     *          file system is constructed to access the contents of a file as
-     *          a file system, and the URI of the enclosing file system cannot be
-     *          obtained
-     *
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager
-     *          is installed, the {@link #toAbsolutePath toAbsolutePath} method
-     *          throws a security exception.
-     */
-	public URI toURI() {
-		return dataForkPath.toUri();
-	}
-
-    /**
-     * Constructs a URL from this URI.
-     *
-     * <p> This convenience method works as if invoking it were equivalent to
-     * evaluating the expression {@code new URL(this.toString())} after
-     * first checking that this URI is absolute. </p>
-     *
-     * @return  A URL constructed from this URI
-     *
-     * @throws  IllegalArgumentException
-     *          If this URL is not absolute
-     *
-     * @throws  MalformedURLException
-     *          If a protocol handler for the URL could not be found,
-     *          or if some other error occurred while constructing the URL
-     */
-    public URL toURL() throws MalformedURLException {
-	  	return toURI().toURL();
-    }
-    
-    
-  /**
-   */
-  public static FileTMJ getHome() {
-	  	throw new RuntimeException("Method not implemented!");//TODO IMPLEMENT!       return path;
-	    /**
-	     * <p> If this abstract pathname is the empty abstract pathname then this
-	     * method returns a {@code Path} that may be used to access the current
-	     * user directory.
-	     *
-	     */
-//	  Path result ;//= filePath;
-//	  if (result == null) {
-//	      synchronized (this) {
-//	          result = filePath;
-//	          if (result == null) {
-//	              result = FileSystems.getDefault().getPath(path);
-//	              result = FileSystems.getDefault().getPath("");
-//	              filePath = result;
-//	          }
-//	      }
-//	  }
-//	  return new FileTMJ(result);
-
-	  
-  }
-  
-  /**
-   * Returns the file system that created this file/directory.
-   * This file/directory must exist to make this work.
-   *
-   * @return  the file system that created this object or null if the object does not exist.
-   */
-  public FileSystem getFileSystem(){
-	  return fileSystem;
-	}
-
-
-  
-	/**
-	 * Returns the <em>parent</em> {@code FileTMJ} or {@code null} if there is none.
-	 *
-	 * <p> The parent of this file consists of this file's root
-	 * component, if any, and each element in the file path except for the
-	 * <em>farthest</em> from the root in the directory hierarchy. This method
-	 * does not access the file system; the file or its parent may not exist.
-	 * Furthermore, this method does not eliminate special names such as "."
-	 * and ".." that may be used in some implementations. On UNIX for example,
-	 * the parent of "{@code /a/b/c}" is "{@code /a/b}", and the parent of
-	 * {@code "x/y/.}" is "{@code x/y}". This method may be used with the {@link
-	 * #normalize normalize} method, to eliminate redundant names, for cases where
-	 * <em>shell-like</em> navigation is required.
-	 * <p> If this file has one or more elements, and no root component, then
-	 * this method is equivalent to evaluating the expression:
-	 * <blockquote><pre>
-	 * subpath(0,&nbsp;getNameCount()-1);
-	 * </pre></blockquote>
-	 *
-	 * @return  a FileTMJ representing the file's parent
-	 */
-	public FileTMJ getParent(){
-		Path parent=dataForkPath.getParent();
-		if(null==parent) {
-			return null;
-		}
-		return new FileTMJ(parent);
-//      if (p == null) return null;
-//      return new File(p, this.prefixLength);
-
-//      if (index < prefixLength) {
-//      if ((prefixLength > 0) && (path.length() > prefixLength))
-//          return path.substring(0, prefixLength);
-//      return null;
-//  }
-//  return path.substring(0, index);
-	}
-
-
-
     /**
      * Resolve the given path against this path.
      *
@@ -1075,111 +306,8 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     public FileTMJ child(Path child) throws InvalidPathException{
 	  	return new FileTMJ(dataForkPath.resolve(child));
 	}
-    
-    /**
-	 * Returns the number of elements in this file's path.
-	 *
-	 * @return  number of path elements, or {@code 0} if this file
-	 *          only represents a root component
-	 */
-	public int getPathElementCount(){
-		return dataForkPath.getNameCount();
-	}
 
-	/**
-	 * Returns an element of this file's path as a {@code String} object.
-	 *
-	 * <p> The {@code index} parameter is the index of the element to return.
-	 * The element that is <em>closest</em> to the root in the directory hierarchy
-	 * has index {@code 0}. The element that is <em>farthest</em> from the root
-	 * has index {@link #getNameCount count}{@code -1}.
-	 *
-	 * @param   index
-	 *          the index of the element
-	 *
-	 * @return  element
-	 *
-	 * @throws  IllegalArgumentException
-	 *          if {@code index} is negative or {@code index} is greater than or
-	 *          equal to the number of elements.
-	 */
-	public Path getPathElementName(int index) throws IllegalArgumentException{
-		return dataForkPath.getName(index);
-	}
 
-    /**
-     * Constructs a relative path between this path and a given path.
-     *
-     * <p> Relativization is the inverse of {@link #resolve(Path) resolution}.
-     * This method attempts to construct a {@link #isAbsolute relative} path
-     * that when {@link #resolve(Path) resolved} against this path, yields a
-     * path that locates the same file as the given path. For example, on UNIX,
-     * if this path is {@code "/a/b"} and the given path is {@code "/a/b/c/d"}
-     * then the resulting relative path would be {@code "c/d"}. Where this
-     * path and the given path do not have a {@link #getRoot root} component,
-     * then a relative path can be constructed. A relative path cannot be
-     * constructed if only one of the paths have a root component. Where both
-     * paths have a root component then it is implementation dependent if a
-     * relative path can be constructed. If this path and the given path are
-     * {@link #equals equal} then an <i>empty path</i> is returned.
-     *
-     * <p> For any two {@link #normalize normalized} paths <i>p</i> and
-     * <i>q</i>, where <i>q</i> does not have a root component,
-     * <blockquote>
-     *   <i>p</i><tt>.relativize(</tt><i>p</i><tt>.resolve(</tt><i>q</i><tt>)).equals(</tt><i>q</i><tt>)</tt>
-     * </blockquote>
-     *
-     * <p> When symbolic links are supported, then whether the resulting path,
-     * when resolved against this path, yields a path that can be used to locate
-     * the {@link Files#isSameFile same} file as {@code other} is implementation
-     * dependent. For example, if this path is  {@code "/a/b"} and the given
-     * path is {@code "/a/x"} then the resulting relative path may be {@code
-     * "../x"}. If {@code "b"} is a symbolic link then is implementation
-     * dependent if {@code "a/b/../x"} would locate the same file as {@code "/a/x"}.
-     *
-     * @param   other
-     *          the path to relativize against this path
-     *
-     * @return  the resulting relative path, or an empty path if both paths are
-     *          equal
-     *
-     * @throws  IllegalArgumentException
-     *          if {@code other} is not a {@code Path} that can be relativized
-     *          against this path
-     */
-	/**
-     * Relativizes the given URI against this URI.
-     *
-     * <p> The relativization of the given URI against this URI is computed as
-     * follows: </p>
-     *
-     * <ol>
-     *
-     *   <li><p> If either this URI or the given URI are opaque, or if the
-     *   scheme and authority components of the two URIs are not identical, or
-     *   if the path of this URI is not a prefix of the path of the given URI,
-     *   then the given URI is returned. </p></li>
-     *
-     *   <li><p> Otherwise a new relative hierarchical URI is constructed with
-     *   query and fragment components taken from the given URI and with a path
-     *   component computed by removing this URI's path from the beginning of
-     *   the given URI's path. </p></li>
-     *
-     * </ol>
-     *
-     * @param  uri  The URI to be relativized against this URI
-     * @return The resulting URI
-     *
-     * @throws  NullPointerException
-     *          If {@code uri} is {@code null}
-     */
-    public Path relativize(FileTMJ other){
-    	return dataForkPath.relativize(other.dataForkPath);
-	}
-    public String relativizeString(FileTMJ other){
-    	return relativize(other).toString();
-	}
-	
     /**
      * Returns the hierarchy distance of the child {@link FileTMJ} whithin this FileTMJ.
      * Returns {@code 0} if the files are equal and therefor at the same level.
@@ -1203,16 +331,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     /**
      * Returns an array of strings naming the files and directories in the
@@ -1599,7 +718,1576 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	
 
 
+
+  
+    /**
+     * Creates a directory by creating all nonexistent parent directories first.
+     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * is not thrown if the directory could not be created because it already
+     * exists.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the nonexistent
+     * directories. Each file attribute is identified by its {@link
+     * FileAttribute#name name}. If more than one attribute of the same name is
+     * included in the array then all but the last occurrence is ignored.
+     *
+     * <p> If this method fails, then it may do so after creating some, but not
+     * all, of the parent directories.
+     *
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     * @return  <code>true</code> if and only if the directory was created,
+     *          along with all necessary parent directories; <code>false</code>
+     *          otherwise
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  FileAlreadyExistsException
+     *          if {@code dir} exists but is not a directory <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          in the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked prior to attempting to create a directory and
+     *          its {@link SecurityManager#checkRead(String) checkRead} is
+     *          invoked for each parent directory that is checked. If {@code
+     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+     *          toAbsolutePath} may need to be invoked to get its absolute path.
+     *          This may invoke the security manager's {@link
+     *          SecurityManager#chyyyyyyyyeckPropertyAccess(String) checkPropertyAccess}
+     *          method to check access to the system property {@code user.dir}
+     */
+	 /**
+     * Creates a directory by creating all nonexistent parent directories first.
+     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * is not thrown if the directory could not be created because it already
+     * exists.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the nonexistent
+     * directories. Each file attribute is identified by its {@link
+     * FileAttribute#name name}. If more than one attribute of the same name is
+     * included in the array then all but the last occurrence is ignored.
+     *
+     * <p> If this method fails, then it may do so after creating some, but not
+     * all, of the parent directories.
+     *
+     * @param   dir
+     *          the directory to create
+     *
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the directory
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  FileAlreadyExistsException
+     *          if {@code dir} exists but is not a directory <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          in the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked prior to attempting to create a directory and
+     *          its {@link SecurityManager#checkRead(String) checkRead} is
+     *          invoked for each parent directory that is checked. If {@code
+     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+     *          toAbsolutePath} may need to be invoked to get its absolute path.
+     *          This may invoke the security manager's {@link
+     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
+     *          method to check access to the system property {@code user.dir}
+     */
+    public boolean createDirectory(FileAttribute<?>... attributes) throws UnsupportedOperationException,FileAlreadyExistsException,IOException,SecurityException {
+    	Path path;
+    	// attempt to create the directory
+    	try {
+    		createAndCheckIsDirectory(dataForkPath, attributes);
+    		path= dataForkPath;
+    	} catch (FileAlreadyExistsException x) {// file exists and is not a directory
+    		throw x;
+    	} catch (IOException x) {
+    		// parent may not exist or other reason
+    	}
+    	SecurityException se = null;
+    	try {
+    		dataForkPath = dataForkPath.toAbsolutePath();
+    	} catch (SecurityException x) {
+    		// don't have permission to get absolute path
+    		se = x;
+    	}
+    	// find a decendent that exists
+    	Path parent = dataForkPath.getParent();
+    	while (parent != null) {
+    		try {
+    			parent.getFileSystem().provider().checkAccess(parent);
+    			break;
+    		} catch (NoSuchFileException x) {
+    			// does not exist
+    		}
+    		parent = parent.getParent();
+    	}
+    	if (parent == null) {
+    		// unable to find existing parent
+    		if (se == null) {
+    			throw new FileSystemException(dataForkPath.toString(), null, "Unable to determine if root directory exists");
+    		} else {
+    			throw se;
+    		}
+    	}
+
+    	// create directories
+    	Path child = parent;
+    	for (Path name: parent.relativize(dataForkPath)) {
+    		child = child.resolve(name);
+    		createAndCheckIsDirectory(child, attributes);
+    	}
+    	path= dataForkPath;
+
+    	if(null!=path) {
+    		init(path);
+    		return true;
+    	}
+    	return false;
+    }
+    /**
+     * Used by createDirectories to attempt to create a directory. A no-op
+     * if the directory already exists.
+	 *
+     * @throws  SecurityException
+     *          If a security manager denies read access to the file.
+     */
+    private static void createAndCheckIsDirectory(Path path, FileAttribute<?>... attributes) throws IOException,SecurityException{
+        try {
+            path.getFileSystem().provider().createDirectory(path, attributes);
+        } catch (FileAlreadyExistsException x) {
+        	boolean isDirectory;
+        	try {
+        		isDirectory= readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).isDirectory();
+        	} catch (IOException e) {
+        		isDirectory= false;
+        	}
+        	if(!isDirectory) {
+        		throw x;
+        	}
+        }
+    }    
+
+    /**
+     * Atomically creates a new, empty file addressed by this object if a file with 
+     * this name does not yet exist. The check for the
+     * existence of the file and the creation of the file if it does not exist
+     * are a single operation that is atomic with respect to all other
+     * filesystem activities that might affect the file.
+     * <p>Missing directories in the file's path will be create, first, if nesseccary.
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the file. Each attribute
+     * is identified by its {@link FileAttribute#name name}. If more than one
+     * attribute of the same name is included in the array then all but the last
+     * occurrence is ignored.
+     * <P>
+     * Note: this method should <i>not</i> be used for file-locking, as
+     * the resulting protocol cannot be made to work reliably. The
+     * {@link java.nio.channels.FileLock FileLock}
+     * facility should be used instead.
+     *
+     * @param   attrs – optional list of file attributes
+     * @return  {@code true} if the file was successfully created, {@code false} if it already existed
+     * @throws  UnsupportedOperationException – if the array contains an attribute that 
+     *          cannot be set atomically when creating the file
+     * @throws  IOException – if an I/O error occurs
+     * @throws  SecurityException – if a security manager denies the write access
+     */
+    public boolean createFileIfNotExists(FileAttribute<?>... attrs) throws IOException {
+    	try {
+    		FileTMJ file=getParent();
+    		if(null!=file) {
+    			file.createDirectory(attrs);
+    		}
+    		// from java.nio.file.Files:
+    		getFileSystem().provider().newByteChannel(
+    			dataForkPath
+    			, EnumSet.<StandardOpenOption>of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+    			, attrs
+    		).close();
+    		return true;
+    	}catch(FileAlreadyExistsException e) {
+    		return false;
+    	}
+    }
+
+    
+    
+    
+    /**
+     * Tests whether this file/directory exists.
+     *
+     * @return  <code>true</code> if and only if the file or directory denoted
+     *          by this abstract pathname exists; <code>false</code> otherwise
+     *
+     * @throws  SecurityException
+     *          If a security manager exists and its <code>{@link
+     *          java.lang.SecurityManager#checkRead(java.lang.String)}</code>
+     *          method denies read access to the file or directory
+     */
+//        SecurityManager security = System.getSecurityManager();
+//        if (security != null) {
+//            security.checkRead(path);
+//        }
+//        if (isInvalid()) {
+//            return false;
+//        }
+//        return ((fs.getBooleanAttributes(this) & FileSystem.BA_EXISTS) != 0);
+    /**
+     * Tests whether the file/directory exists.
+     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
+     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} then symbolic links are followed.
+     *
+     * <p> Note that the result of this method is immediately outdated. If this
+     * method indicates the file exists then there is no guarantee that a
+     * subsequence access will succeed. Care should be taken when using this
+     * method in security sensitive applications.
+     *
+     * @param   options
+     *          options indicating how symbolic links are handled
+     * 
+     * @return  {@code true} if the file exists; {@code false} if the file does
+     *          not exist.
+     *
+     * @throws  SecurityException
+     *          If a {@link SecurityManager} prohibits the test.
+     */
+    public boolean exists() throws SecurityException{
+    	return exists(LinkOption.NOFOLLOW_LINKS);
+    }
+    public boolean exists(LinkOption... linkOptions) throws SecurityException{
+		try {
+			readBasicFileAttributes(dataForkPath, linkOptions); // file exists
+			return true;
+		} catch (IOException e) { // does not exist or unable to determine if file exists
+			try {
+				readBasicFileAttributes(resourceForkPath, linkOptions); // file exists
+				return true;
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				return false;
+			}
+		}
+    }
+
+	public String extension() {
+		return extension(dataForkPath);
+	}
+	public static String extension(Path path) { // returns extension, if any
+		Path p=path.getFileName();
+		if(null==p) {
+			return null;
+		}
+		int i = p.toString().lastIndexOf('.');
+		if(i<0) {return "";}
+	    return p.toString().substring(i+1);
+	}
+
+//    /**
+//     * Tests whether the file located by this path does not exist. This method
+//     * is intended for cases where it is required to take action when it can be
+//     * confirmed that a file does not exist.
+//     *
+//     * <p> The {@code options} parameter may be used to indicate how symbolic links
+//     * are handled for the case that the file is a symbolic link. By default,
+//     * symbolic links are followed. If the option {@link LinkOption#NOFOLLOW_LINKS
+//     * NOFOLLOW_LINKS} is present then symbolic links are not followed.
+//     *
+//     * <p> Note that this method is not the complement of the {@link #exists
+//     * exists} method. Where it is not possible to determine if a file exists
+//     * or not then both methods return {@code false}. As with the {@code exists}
+//     * method, the result of this method is immediately outdated. If this
+//     * method indicates the file does exist then there is no guarantee that a
+//     * subsequence attempt to create the file will succeed. Care should be taken
+//     * when using this method in security sensitive applications.
+//     *
+//     * @param   path
+//     *          the path to the file to test
+//     * @param   options
+//     *          options indicating how symbolic links are handled
+//     *
+//     * @return  {@code true} if the file does not exist; {@code false} if the
+//     *          file exists or its existence cannot be determined
+//     *
+//     * @throws  SecurityException
+//     *          In the case of the default provider, the {@link
+//     *          SecurityManager#checkRead(String)} is invoked to check
+//     *          read access to the file.
+//     */
+//    public static boolean notExists(Path path, LinkOption... options) {
+//    	throw new RuntimeException("Method not implemented, yet!"); //TODO IMPLEMENT!
+////        try {
+////            if (followLinks(options)) {
+////                provider(path).checkAccess(path);
+////            } else {
+////                // attempt to read attributes without following links
+////                readAttributes(path, BasicFileAttributes.class,
+////                               LinkOption.NOFOLLOW_LINKS);
+////            }
+////            // file exists
+////            return false;
+////        } catch (NoSuchFileException x) {
+////            // file confirmed not to exist
+////            return true;
+////        } catch (IOException x) {
+////            return false;
+////        }
+//    }
+
+
+	/**
+	 * Returns the <em>name</em> of the file or directory denoted by this file as a
+	 * {@code String} object. The file name is the <em>farthest</em> element from
+	 * the root in the directory hierarchy.
+	 *
+	 * @return  a String representing the name of the file or directory, or
+	 *          {@code null} if this file has zero elements
+	 */
+	public String getFileName(){
+		return dataForkPath.getFileName().toString();// root -> null
+//		return dataForkPath.toFile().getName();//root -> ""
+	}
+  /**
+   * @return  The name of the file or directory denoted by this abstract
+   *          pathname, or the empty string if this pathname's name sequence
+   *          is empty
+   */
+
+	  /**
+	   * Returns the file system that created this file/directory.
+	   * This file/directory must exist to make this work.
+	   *
+	   * @return  the file system that created this object or null if the object does not exist.
+	   */
+	  public FileSystem getFileSystem(){
+		  return fileSystem;
+		}
+	  
+  public static FileTMJ getHome() {
+	  	throw new RuntimeException("Method not implemented!");//TODO IMPLEMENT!       return path;
+	    /**
+	     * <p> If this abstract pathname is the empty abstract pathname then this
+	     * method returns a {@code Path} that may be used to access the current
+	     * user directory.
+	     *
+	     */
+//	  Path result ;//= filePath;
+//	  if (result == null) {
+//	      synchronized (this) {
+//	          result = filePath;
+//	          if (result == null) {
+//	              result = FileSystems.getDefault().getPath(path);
+//	              result = FileSystems.getDefault().getPath("");
+//	              filePath = result;
+//	          }
+//	      }
+//	  }
+//	  return new FileTMJ(result);	  
+  }
+  
+	/**
+	 * Returns the <em>parent</em> {@code FileTMJ} or {@code null} if there is none.
+	 *
+	 * <p> The parent of this file consists of this file's root
+	 * component, if any, and each element in the file path except for the
+	 * <em>farthest</em> from the root in the directory hierarchy. This method
+	 * does not access the file system; the file or its parent may not exist.
+	 * Furthermore, this method does not eliminate special names such as "."
+	 * and ".." that may be used in some implementations. On UNIX for example,
+	 * the parent of "{@code /a/b/c}" is "{@code /a/b}", and the parent of
+	 * {@code "x/y/.}" is "{@code x/y}". This method may be used with the {@link
+	 * #normalize normalize} method, to eliminate redundant names, for cases where
+	 * <em>shell-like</em> navigation is required.
+	 * <p> If this file has one or more elements, and no root component, then
+	 * this method is equivalent to evaluating the expression:
+	 * <blockquote><pre>
+	 * subpath(0,&nbsp;getNameCount()-1);
+	 * </pre></blockquote>
+	 *
+	 * @return  a FileTMJ representing the file's parent
+	 */
+	public FileTMJ getParent(){
+		Path parent=dataForkPath.getParent();
+		if(null==parent) {
+			return null;
+		}
+		return new FileTMJ(parent);
+//      if (p == null) return null;
+//      return new File(p, this.prefixLength);
+
+//      if (index < prefixLength) {
+//      if ((prefixLength > 0) && (path.length() > prefixLength))
+//          return path.substring(0, prefixLength);
+//      return null;
+//  }
+//  return path.substring(0, index);
+	}
+	
+	/**
+   * Ignores the macOS Fork-Duality.
+   * Returns a {@link Path} representing this file's path. The resulting path is associated with the
+   * {@link java.nio.file.FileSystems#getDefault default-filesystem}.
+   * The resulting
+   * string uses the {@link #separator default name-separator character} to
+   * separate the names in the name sequence.
+   *
+   * @return  The string form of this abstract pathname
+   * @throws  java.nio.file.InvalidPathException
+   *          if a {@code Path} object cannot be constructed from the abstract
+   *          file (see {@link java.nio.file.FileSystem#getPath FileSystem.getPath})
+   */
+  public Path getPath() {
+	  return dataForkPath;
+  }
+  public String getPathString() {
+	  return dataForkPath.toString();
+  }
+
+  /**
+	 * Returns the number of elements in this file's path.
+	 *
+	 * @return  number of path elements, or {@code 0} if this file
+	 *          only represents a root component
+	 */
+	public int getPathElementCount(){
+		return dataForkPath.getNameCount();
+	}
+
+	/**
+	 * Returns an element of this file's path as a {@code String} object.
+	 *
+	 * <p> The {@code index} parameter is the index of the element to return.
+	 * The element that is <em>closest</em> to the root in the directory hierarchy
+	 * has index {@code 0}. The element that is <em>farthest</em> from the root
+	 * has index {@link #getNameCount count}{@code -1}.
+	 *
+	 * @param   index
+	 *          the index of the element
+	 *
+	 * @return  element
+	 *
+	 * @throws  IllegalArgumentException
+	 *          if {@code index} is negative or {@code index} is greater than or
+	 *          equal to the number of elements.
+	 */
+	public Path getPathElementName(int index) throws IllegalArgumentException{
+		return dataForkPath.getName(index);
+	}
+
+  
+    /**
+	 * Returns the <em>root</em> {@code FileTMJ} of this file,
+	 * or {@code null} if there is none.
+	 *
+	 * @return  a FileTMJ representing the root component of this file, or {@code null}
+	 */
+	public FileTMJ getRoot(){
+		Path root=dataForkPath.getRoot();
+		if(null==root) {
+			return null;
+		}
+		return new FileTMJ(root);
+	}
+
+	  /**
+	   * Tells whether or not this path is absolute.
+	   *
+	   * <p> An absolute path is complete in that it doesn't need to be combined
+	   * with other path information in order to locate a file.
+	   *
+	   * @return  {@code true} if, and only if, this path is absolute
+	   */
+	  /**
+	   * Tests whether this abstract pathname is absolute.  The definition of
+	   * absolute pathname is system dependent.  On UNIX systems, a pathname is
+	   * absolute if its prefix is <code>"/"</code>.  On Microsoft Windows systems, a
+	   * pathname is absolute if its prefix is a drive specifier followed by
+	   * <code>"\\"</code>, or if its prefix is <code>"\\\\"</code>.
+	   *
+	   * @return  <code>true</code> if this abstract pathname is absolute,
+	   *          <code>false</code> otherwise
+	   */
+	  /**
+	   * Tells whether or not this URI is absolute.
+	   *
+	   * <p> A URI is absolute if, and only if, it has a scheme component. </p>
+	   *
+	   * @return  {@code true} if, and only if, this URI is absolute
+	   */
+	  public boolean isAbsolute() {
+		  return dataForkPath.isAbsolute();
+//	      return scheme != null;
+	  }
+
+    /**
+     * Tests whether the object is an existing directory.
+     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
+     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} then symbolic links are followed.
+     *
+     * <p> Where it is required to distinguish an I/O exception from the case
+     * that the file is not a directory, or where several attributes of the
+     * same file are required at the same time, then the {@link
+     * java.nio.file.Files#readAttributes(Path,Class,LinkOption[])
+     * Files.readAttributes} method may be used.
+     *
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  {@code true} if the file an existing directory,
+     *          {@code false} otherwise
+     *
+     * @throws  SecurityException
+     *          If a security manager denies read access to the file
+     */
+	public boolean isDirectory() {
+		return isDirectory(LinkOption.NOFOLLOW_LINKS);
+	}
+	public boolean isDirectory(LinkOption... linkOptions) {
+//		return java.nio.file.Files.isDirectory(dataForkPath, linkOptions);
+        try {
+        	return readBasicFileAttributes(dataForkPath, linkOptions).isDirectory();
+        } catch (IOException ioe) {
+            return false;
+        }
+    }
+
+	public boolean isEmpty() throws SecurityException, IOException {
+		return 0==sizeBytes();
+	}
+    
+	/** 
+	 * file system directory that is normally displayed to the user by the Finder as if it were a single file. 
+	 * com.apple.package
+	 * .rtfd, bundle .app, dashboard widget, .download, FCP .fcarch, project files GarageBand, Keynote, Pages, Numbers, iMovie, Xcode; Installer packages
+	 * To register a document as a package, you must modify the document type information in your application’s information property list (Info.plist) file.
+	 * The CFBundleDocumentTypes key stores information about the document types your application supports. For each document package type, include the 
+	 * LSTypeIsPackage key with an appropriate value. The presence of this key tells the Finder and Launch Services to treat directories with the given file 
+	 * extension as a package. For more information about Info.plist keys, see Information Property List Key Reference.
+	 * Document packages should always have an extension to identify them—even though that extension may be hidden by the user. The extension allows the Finder 
+	 * to identify your document directory and treat it as a package. You should never associate a document package with a MIME type or 4-byte OS type.
+	 * 
+	 * package if any of:
+	 * has a known filename extension.
+	 * has an extension of registered Document Packages.
+	 * has its package bit set.
+	 */
+	public boolean isPackage() {
+		return isPackage( extension() );
+	}
+	private static boolean isPackage(String extension) {
+		switch(extension) {
+			case "": return false; // no package
+			case "app": // known package extensions
+			case "bundle":
+			case "framework":
+			case "plugin":
+			case "kext":
+			case "lproj": // localization files
+				return true; 
+			default: return false; // no package found
+		}
+	}
+	
+    /**
+     * Tests whether the object is an existing directory.
+     * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
+     * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
+     * NOFOLLOW_LINKS} then symbolic links are followed.
+     *
+     * <p> Where it is required to distinguish an I/O exception from the case
+     * that the file is not a regular file then the file attributes can be
+     * read with the {@link #readAttributes(Path,Class,LinkOption[])
+     * readAttributes} method and the file type tested with the {@link
+     * BasicFileAttributes#isRegularFile} method.
+     *
+     * @param   options
+     *          options indicating how symbolic links are handled
+     *
+     * @return  {@code true} if the file an existing regular file,
+     *          {@code false} otherwise
+     *
+     * @throws  SecurityException
+     *          If a security manager denies read access to the file
+     */
+	public boolean isRegularFile() {
+		return isRegularFile(LinkOption.NOFOLLOW_LINKS);
+	}
+	public boolean isRegularFile(LinkOption... linkOptions) {
+//		return java.nio.file.Files.isRegularFile(dataForkPath, linkOptions);
+        try {
+        	return readBasicFileAttributes(dataForkPath, linkOptions).isRegularFile();
+        } catch (IOException ioe) {
+            return false;
+        }
+    }
    
+    /**
+     * From java.nio.file.Files
+     * Tests whether a file is a symbolic link.
+     *
+     * <p> Where it is required to distinguish an I/O exception from the case
+     * that the file is not a symbolic link then the file attributes can be
+     * read with the {@link #readAttributes(Path,Class,LinkOption[])
+     * readAttributes} method and the file type tested with the {@link
+     * BasicFileAttributes#isSymbolicLink} method.
+     *
+     * @param   path  The path to the file
+     *
+     * @return  {@code true} if the file is a symbolic link; {@code false} if
+     *          the file does not exist, is not a symbolic link, or it cannot
+     *          be determined if the file is a symbolic link or not.
+     *
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method denies read access to the file.
+     */
+    public boolean isSymbolicLink() {
+        try {
+        	return readBasicFileAttributes(dataForkPath,LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
+        } catch (IOException ioe) {
+            return false;
+        }
+    }
+    
+	
+    /**
+     * Renames the file denoted by this abstract pathname.
+     *
+     * <p> Many aspects of the behavior of this method are inherently
+     * platform-dependent: The rename operation might not be able to move a
+     * file from one filesystem to another, it might not be atomic, and it
+     * might not succeed if a file with the destination abstract pathname
+     * already exists.  The return value should always be checked to make sure
+     * that the rename operation was successful.
+     *
+     * <p> Note that the {@link java.nio.file.Files} class defines the {@link
+     * java.nio.file.Files#move move} method to move or rename a file in a
+     * platform independent manner.
+     *
+     * @param  dest  The new abstract pathname for the named file
+     *
+     * @return  <code>true</code> if and only if the renaming succeeded;
+     *          <code>false</code> otherwise
+     *
+     * @throws  SecurityException
+     *          If a security manager exists and its <code>{@link
+     *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
+     *          method denies write access to either the old or new pathnames
+     *
+     * @throws  NullPointerException
+     *          If parameter <code>dest</code> is <code>null</code>
+     */
+    /**
+     * Move or rename a file to a target file.
+     *
+     * <p> By default, this method attempts to move the file to the target
+     * file, failing if the target file exists except if the source and
+     * target are the {@link #isSameFile same} file, in which case this method
+     * has no effect. If the file is a symbolic link then the symbolic link
+     * itself, not the target of the link, is moved. This method may be
+     * invoked to move an empty directory. In some implementations a directory
+     * has entries for special files or links that are created when the
+     * directory is created. In such implementations a directory is considered
+     * empty when only the special entries exist. When invoked to move a
+     * directory that is not empty then the directory is moved if it does not
+     * require moving the entries in the directory.  For example, renaming a
+     * directory on the same {@link FileStore} will usually not require moving
+     * the entries in the directory. When moving a directory requires that its
+     * entries be moved then this method fails (by throwing an {@code
+     * IOException}). To move a <i>file tree</i> may involve copying rather
+     * than moving directories and this can be done using the {@link
+     * #copy copy} method in conjunction with the {@link
+     * #walkFileTree java.nio.file.Files.walkFileTree} utility method.
+     *
+     * <p> The {@code options} parameter may include any of the following:
+     *
+     * <table border=1 cellpadding=5 summary="">
+     * <tr> <th>Option</th> <th>Description</th> </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
+     *   <td> If the target file exists, then the target file is replaced if it
+     *     is not a non-empty directory. If the target file exists and is a
+     *     symbolic link, then the symbolic link itself, not the target of
+     *     the link, is replaced. </td>
+     * </tr>
+     * <tr>
+     *   <td> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </td>
+     *   <td> The move is performed as an atomic file system operation and all
+     *     other options are ignored. If the target file exists then it is
+     *     implementation specific if the existing file is replaced or this method
+     *     fails by throwing an {@link IOException}. If the move cannot be
+     *     performed as an atomic file system operation then {@link
+     *     AtomicMoveNotSupportedException} is thrown. This can arise, for
+     *     example, when the target location is on a different {@code FileStore}
+     *     and would require that the file be copied, or target location is
+     *     associated with a different provider to this object. </td>
+     * </table>
+     *
+     * <p> An implementation of this interface may support additional
+     * implementation specific options.
+     *
+     * <p> Moving a file will copy the {@link
+     * BasicFileAttributes#lastModifiedTime last-modified-time} to the target
+     * file if supported by both source and target file stores. Copying of file
+     * timestamps may result in precision loss. An implementation may also
+     * attempt to copy other file attributes but is not required to fail if the
+     * file attributes cannot be copied. When the move is performed as
+     * a non-atomic operation, and an {@code IOException} is thrown, then the
+     * state of the files is not defined. The original file and the target file
+     * may both exist, the target file may be incomplete or some of its file
+     * attributes may not been copied from the original file.
+     *
+     * <p> <b>Usage Examples:</b>
+     * Suppose we want to rename a file to "newname", keeping the file in the
+     * same directory:
+     * <pre>
+     *     Path source = ...
+     *     java.nio.file.Files.move(source, source.resolveSibling("newname"));
+     * </pre>
+     * Alternatively, suppose we want to move a file to new directory, keeping
+     * the same file name, and replacing any existing file of that name in the
+     * directory:
+     * <pre>
+     *     Path source = ...
+     *     Path newdir = ...
+     *     java.nio.file.Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
+     * </pre>
+     *
+     * @param   target
+     *          the path to the target file (may be associated with a different
+     *          provider to the source path)
+     * @param   options
+     *          options specifying how the move should be done
+     *
+     * @return  the path to the target file
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains a copy option that is not supported
+     * @throws  FileAlreadyExistsException
+     *          if the target file exists but cannot be replaced because the
+     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *          specific exception)</i>
+     * @throws  DirectoryNotEmptyException
+     *          the {@code REPLACE_EXISTING} option is specified but the file
+     *          cannot be replaced because it is a non-empty directory
+     *          <i>(optional specific exception)</i>
+     * @throws  AtomicMoveNotSupportedException
+     *          if the options array contains the {@code ATOMIC_MOVE} option but
+     *          the file cannot be moved as an atomic file system operation.
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked to check write access to both the source and
+     *          target file.
+     */
+//        public boolean moveTo(File dest, CopyOption... options)throws IOException {
+//        FileSystemProvider provider = provider(source);
+//        if (provider(target) == provider) {
+//            // same provider
+//            provider.move(source, target, options);
+//        } else {
+//            // different providers
+//            copyMoveHelper_moveToForeignTarget(source, target, options);
+//        }
+//        return target;
+//        SecurityManager security = System.getSecurityManager();
+//        if (security != null) {
+//            security.checkWrite(path);
+//            security.checkWrite(dest.path);
+//        }
+//        if (dest == null) {
+//            throw new NullPointerException();
+//        }
+//        if (this.isInvalid() || dest.isInvalid()) {
+//            return false;
+//        }
+//        return fs.rename(this, dest);
+		public FileTMJ moveTo(FileTMJ destination) throws IOException {
+			Path path=moveTo(destination.dataForkPath);
+			return new FileTMJ(path);
+////			public static Path move(Path source, Path target, CopyOption... options) throws IOException  {
+//			        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
+//			        if (destination.getFileSystem().provider() == provider) {
+//			            // same provider
+//			            provider.move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
+//			        } else {
+//			            // different providers
+////			        	copyMoveHelper_moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
+//			        	copyMoveHelper_moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
+//			 
+//     copyToForeignTarget(dataForkPath, destination.dataForkPath, convertMoveToCopyOptions(StandardCopyOption.ATOMIC_MOVE));
+//     java.nio.file.Files.delete(dataForkPath);
+// }
+//			        }
+//			        return new FileTMJ(destination);
+////			    }
+		}
+			
+		 /**
+	     * Move or rename a file to a target file.
+	     *
+	     * <p> By default, this method attempts to move the file to the target
+	     * file, failing if the target file exists except if the source and
+	     * target are the {@link #isSameFile same} file, in which case this method
+	     * has no effect. If the file is a symbolic link then the symbolic link
+	     * itself, not the target of the link, is moved. This method may be
+	     * invoked to move an empty directory. In some implementations a directory
+	     * has entries for special files or links that are created when the
+	     * directory is created. In such implementations a directory is considered
+	     * empty when only the special entries exist. When invoked to move a
+	     * directory that is not empty then the directory is moved if it does not
+	     * require moving the entries in the directory.  For example, renaming a
+	     * directory on the same {@link FileStore} will usually not require moving
+	     * the entries in the directory. When moving a directory requires that its
+	     * entries be moved then this method fails (by throwing an {@code
+	     * IOException}). To move a <i>file tree</i> may involve copying rather
+	     * than moving directories and this can be done using the {@link
+	     * #copy copy} method in conjunction with the {@link
+	     * #walkFileTree Files.walkFileTree} utility method.
+	     *
+	     * <p> The {@code options} parameter may include any of the following:
+	     *
+	     * <table border=1 cellpadding=5 summary="">
+	     * <tr> <th>Option</th> <th>Description</th> </tr>
+	     * <tr>
+	     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
+	     *   <td> If the target file exists, then the target file is replaced if it
+	     *     is not a non-empty directory. If the target file exists and is a
+	     *     symbolic link, then the symbolic link itself, not the target of
+	     *     the link, is replaced. </td>
+	     * </tr>
+	     * <tr>
+	     *   <td> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </td>
+	     *   <td> The move is performed as an atomic file system operation and all
+	     *     other options are ignored. If the target file exists then it is
+	     *     implementation specific if the existing file is replaced or this method
+	     *     fails by throwing an {@link IOException}. If the move cannot be
+	     *     performed as an atomic file system operation then {@link
+	     *     AtomicMoveNotSupportedException} is thrown. This can arise, for
+	     *     example, when the target location is on a different {@code FileStore}
+	     *     and would require that the file be copied, or target location is
+	     *     associated with a different provider to this object. </td>
+	     * </table>
+	     *
+	     * <p> An implementation of this interface may support additional
+	     * implementation specific options.
+	     *
+	     * <p> Moving a file will copy the {@link
+	     * BasicFileAttributes#lastModifiedTime last-modified-time} to the target
+	     * file if supported by both source and target file stores. Copying of file
+	     * timestamps may result in precision loss. An implementation may also
+	     * attempt to copy other file attributes but is not required to fail if the
+	     * file attributes cannot be copied. When the move is performed as
+	     * a non-atomic operation, and an {@code IOException} is thrown, then the
+	     * state of the files is not defined. The original file and the target file
+	     * may both exist, the target file may be incomplete or some of its file
+	     * attributes may not been copied from the original file.
+	     *
+	     * <p> <b>Usage Examples:</b>
+	     * Suppose we want to rename a file to "newname", keeping the file in the
+	     * same directory:
+	     * <pre>
+	     *     Path source = ...
+	     *     Files.move(source, source.resolveSibling("newname"));
+	     * </pre>
+	     * Alternatively, suppose we want to move a file to new directory, keeping
+	     * the same file name, and replacing any existing file of that name in the
+	     * directory:
+	     * <pre>
+	     *     Path source = ...
+	     *     Path newdir = ...
+	     *     Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
+	     * </pre>
+	     *
+‚	     * @param   target
+	     *          the path to the target file (may be associated with a different
+	     *          provider to the source path)
+	     * @param   options
+	     *          options specifying how the move should be done
+	     *
+	     * @return  the path to the target file
+	     *
+	     * @throws  UnsupportedOperationException
+	     *          if the array contains a copy option that is not supported
+	     * @throws  FileAlreadyExistsException
+	     *          if the target file exists but cannot be replaced because the
+	     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
+	     *          specific exception)</i>
+	     * @throws  DirectoryNotEmptyException
+	     *          the {@code REPLACE_EXISTING} option is specified but the file
+	     *          cannot be replaced because it is a non-empty directory
+	     *          <i>(optional specific exception)</i>
+	     * @throws  AtomicMoveNotSupportedException
+	     *          if the options array contains the {@code ATOMIC_MOVE} option but
+	     *          the file cannot be moved as an atomic file system operation.
+	     * @throws  IOException
+	     *          if an I/O error occurs
+	     * @throws  SecurityException
+	     *          In the case of the default provider, and a security manager is
+	     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+	     *          method is invoked to check write access to both the source and
+	     *          target file.
+	     */
+		/**
+		 * Converts the given array of options for moving a file to options suitable
+		 * for copying the file when a move is implemented as copy + delete.
+		 */  
+		private Path moveTo(Path target) throws UnsupportedOperationException,FileAlreadyExistsException,DirectoryNotEmptyException,AtomicMoveNotSupportedException,IOException,SecurityException   {
+	        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
+	        if (target.getFileSystem().provider() == provider) { // same provider
+	            provider.move(dataForkPath, target, StandardCopyOption.ATOMIC_MOVE);
+	        } else {
+	        	// different providers -> copy+delete           
+	        	CopyOption[] newOptions = new CopyOption[2];
+//	           	throw new AtomicMoveNotSupportedException(null, null, "Atomic move between providers is not supported");
+	        	copyMoveHelper_copyToForeignTarget(dataForkPath, target, new CopyOption[] {LinkOption.NOFOLLOW_LINKS,StandardCopyOption.COPY_ATTRIBUTES});
+	        	dataForkPath.getFileSystem().provider().delete(dataForkPath);
+	        }
+	        return target;
+	    }
+
+    
+    /**
+     * Reads the target of a symbolic link <i>(optional operation)</i>.
+     *
+     * <p> If the file system supports <a href="package-summary.html#links">symbolic
+     * links</a> then this method is used to read the target of the link, failing
+     * if the file is not a symbolic link. The target of the link need not exist.
+     * The returned {@code Path} object will be associated with the same file
+     * system as {@code link}.
+     *
+     * @param   link
+     *          the path to the symbolic link
+     *
+     * @return  a {@code Path} object representing the target of the link
+     *
+     * @throws  UnsupportedOperationException
+     *          if the implementation does not support symbolic links
+     * @throws  NotLinkException
+     *          if the target could otherwise not be read because the file
+     *          is not a symbolic link <i>(optional specific exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          If a security manager denies to read the link.																																				
+     */
+    public FileTMJ readSymbolicLinkTarget() throws IOException, UnsupportedOperationException,NotLinkException,SecurityException {																													
+    	return new FileTMJ(dataForkPath.getFileSystem().provider().readSymbolicLink(dataForkPath));
+    }
+  
+    /**
+     * Constructs a relative path between this path and a given path.
+     *
+     * <p> Relativization is the inverse of {@link #resolve(Path) resolution}.
+     * This method attempts to construct a {@link #isAbsolute relative} path
+     * that when {@link #resolve(Path) resolved} against this path, yields a
+     * path that locates the same file as the given path. For example, on UNIX,
+     * if this path is {@code "/a/b"} and the given path is {@code "/a/b/c/d"}
+     * then the resulting relative path would be {@code "c/d"}. Where this
+     * path and the given path do not have a {@link #getRoot root} component,
+     * then a relative path can be constructed. A relative path cannot be
+     * constructed if only one of the paths have a root component. Where both
+     * paths have a root component then it is implementation dependent if a
+     * relative path can be constructed. If this path and the given path are
+     * {@link #equals equal} then an <i>empty path</i> is returned.
+     *
+     * <p> For any two {@link #normalize normalized} paths <i>p</i> and
+     * <i>q</i>, where <i>q</i> does not have a root component,
+     * <blockquote>
+     *   <i>p</i><tt>.relativize(</tt><i>p</i><tt>.resolve(</tt><i>q</i><tt>)).equals(</tt><i>q</i><tt>)</tt>
+     * </blockquote>
+     *
+     * <p> When symbolic links are supported, then whether the resulting path,
+     * when resolved against this path, yields a path that can be used to locate
+     * the {@link Files#isSameFile same} file as {@code other} is implementation
+     * dependent. For example, if this path is  {@code "/a/b"} and the given
+     * path is {@code "/a/x"} then the resulting relative path may be {@code
+     * "../x"}. If {@code "b"} is a symbolic link then is implementation
+     * dependent if {@code "a/b/../x"} would locate the same file as {@code "/a/x"}.
+     *
+     * @param   other
+     *          the path to relativize against this path
+     *
+     * @return  the resulting relative path, or an empty path if both paths are
+     *          equal
+     *
+     * @throws  IllegalArgumentException
+     *          if {@code other} is not a {@code Path} that can be relativized
+     *          against this path
+     */
+	/**
+     * Relativizes the given URI against this URI.
+     *
+     * <p> The relativization of the given URI against this URI is computed as
+     * follows: </p>
+     *
+     * <ol>
+     *
+     *   <li><p> If either this URI or the given URI are opaque, or if the
+     *   scheme and authority components of the two URIs are not identical, or
+     *   if the path of this URI is not a prefix of the path of the given URI,
+     *   then the given URI is returned. </p></li>
+     *
+     *   <li><p> Otherwise a new relative hierarchical URI is constructed with
+     *   query and fragment components taken from the given URI and with a path
+     *   component computed by removing this URI's path from the beginning of
+     *   the given URI's path. </p></li>
+     *
+     * </ol>
+     *
+     * @param  uri  The URI to be relativized against this URI
+     * @return The resulting URI
+     *
+     * @throws  NullPointerException
+     *          If {@code uri} is {@code null}
+     */
+    public Path relativize(FileTMJ other){
+    	return dataForkPath.relativize(other.dataForkPath);
+	}
+    public String relativizeString(FileTMJ other){
+    	return relativize(other).toString();
+	}
+	   
+    
+    /**
+     * Remove this file/directory from the file system.
+     * 
+     * In this is a directory, its contents will be removed, first. Consequently this 
+     * method may not be atomic with respect to other file system operations.
+	 * If this is a symbolic link then the link itself is deleted, not its target.
+     *
+     * @return  {@code true} – if the file/directory was successfully deleted,
+     *          {@code false} – if it could not be deleted because it did not exist
+     * @throws  IOException – if an I/O error occurs
+     * @throws  SecurityException – if a security manager denies the operation
+     */
+	    public boolean removeIfExists() throws SecurityException,IOException{
+	    		return removeIfExists(false);
+	    }
+    public boolean removeIfExists(boolean ignoreErrors) throws SecurityException,IOException{
+    	if(isDirectory()) {
+    		removeDirContent(ignoreErrors);
+    	}
+    	return dataForkPath.getFileSystem().provider().deleteIfExists(dataForkPath);
+//    	return java.nio.file.Files.deleteIfExists(dataForkPath);
+//		 * java.nio.file.Files.delete(path);
+//       * = path.getFileSystem().provider().delete(path);
+//		 * boolean java.nio.file.Files.deleteIfExists(path);
+//		 * = path.getFileSystem().provider().deleteIfExists(path)
+//	     * May require to examine if file is a directory. A directory must be empty.
+//	     * This method can be used with the {@link #walkFileTree walkFileTree}
+//	     * method to delete a directory and all entries in the directory, or an
+//	     * entire <i>file-tree</i> where required.
+//    	 * Consequently this method may not be atomic with respect to other file system operations.  
+//	     * If the file is a symbolic link then the link itself is deleted, not its target.
+//	     * @throws  DirectoryNotEmptyException
+//	     * @throws  IOException
+//	     * @throws  SecurityException
+//	     *          If a security manager denies the operation.
+//	     *          {@link SecurityManager#checkDelete(String)} method
+//	     *          is invoked to check delete access to the file
+	    
+//		 * boolean java.io.File.delete();
+//		 * = SecurityManager security = System.getSecurityManager();
+//        if (security != null) { security.checkDelete(path); } // throws SecurityException
+//        if (isInvalid()) { return false; } // if Pfad == char(0)
+//        return fs.delete(this);
+//	     * If a directory, then it must be empty.
+//	     * @return  <code>true</code> if successfully deleted; <code>false</code> otherwise
+//	     * @throws  SecurityException
+    }
+    private void removeDirContent(boolean ignoreErrors) throws SecurityException, IOException {
+    	FileTMJ[] files=containingFiles();
+    	for(FileTMJ file:files) {
+    		if(!file.removeIfExists() && !ignoreErrors) {
+    			throw new IOException("File tree has changed during operation.");
+    		}
+    	}
+    }
+    
+    
+	/** returns true, if the object's name was sucessfully changed or need not to be changed, false otherwise. 
+	 * nameNew must not be null
+	 * @throws IOException 
+	 * */
+	public boolean setName(String nameNew) throws IOException {
+		return setName(Paths.get(nameNew));
+	}
+	public boolean setName(Path nameNew) throws IOException {
+//			if(dataForkPath.getFileName().toString().equals(nameNew)){
+//				return true;
+//			}
+			Path parent=dataForkPath.getParent();
+			// try{
+			Path dest=parent.resolve(nameNew);
+			// }
+			
+			try {
+				readBasicFileAttributes(dest, LinkOption.NOFOLLOW_LINKS); // test for any attribute
+				throw new FileAlreadyExistsException(dest.toString());
+			} catch (IOException e) { // does not exist or unable to determine if file exists
+			}
+
+			try {
+				dataForkPath=moveTo(dest);//Dies wirkt sich auch korrekt auf den Ressource Fork aus, jedenfalls unter macOS 10.13.6 und HFS+j
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw e;
+			}
+//			 }catch(Error e){ the error_message number the error_number
+//				if( the error_number is -59 ){
+//					the error_message="This name contains improper characters, such as a colon (:)."
+//				}else{ // the suggested name is too long
+//					the error_message=error_message // "The name is more than 31 characters long."
+//				}
+//				tell me=display dialog the error_message default answer nameNew buttons {"Cancel", "Skip", "OK"} default button 3
+//				copy the result as list={nameNew, button_pressed}
+//				if( the button_pressed is "Skip" ){ return 0
+//				my setFilesystemObjectName(filesystemObject, nameNew)
+//			}
+		return false;
+		}
+	
+    
+	/**
+	 * From java.nio.file.Files.exists
+	 * Returns the size of a file (in bytes). 
+	 * The size may differ from the actual size on the file system due to compression, support for sparse files, or other reasons. 
+	 * The size of files that are not regular files is implementation specific and therefore unspecified.
+     * @param   options
+     *          options indicating how symbolic links are handled
+     * 
+	 * @return size in bytes, unspecified if directory
+	 * @throws SecurityException - If a security manager exists and its java.lang.SecurityManager.checkRead(java.lang.String) method denies read access to the file
+	 * @throws IOException - if an I/O error occurs
+	 * 
+	 * long java.nio.file.Files.size(Path path) throws IOException
+	 */
+	public long sizeBytes() throws SecurityException, IOException{
+		return sizeBytes(LinkOption.NOFOLLOW_LINKS);
+	}
+	public long sizeBytes(LinkOption...linkOptions) throws SecurityException, IOException{
+		long dataSize=0;
+		long resourceSize=0;
+//		if(!exists(linkOptions)){
+//		}else {
+			// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
+			// So we don't need that separated.
+			try {
+				dataSize=readBasicFileAttributes(dataForkPath, linkOptions).size(); // file exists
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				dataSize=-1;
+			}
+			try {
+				resourceSize=readBasicFileAttributes(resourceForkPath, linkOptions).size(); // file exists
+			} catch (IOException e2) { // does not exist or unable to determine if file exists
+				resourceSize=-1;
+			}
+			if(0>dataSize) {
+				if(0>resourceSize) {
+					throw new FileNotFoundException();
+				}else {
+					return resourceSize;
+				}
+			}else if(0>resourceSize){
+				return dataSize;
+			}else {
+				return dataSize+resourceSize;
+			}
+//		}
+//		if(!java.nio.file.Files.exists(dataForkPath, linkOptions) && !java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
+//			throw new FileNotFoundException();
+//		}else {
+//			if(java.nio.file.Files.exists(dataForkPath, linkOptions)) {
+//				dataSize=java.nio.file.Files.size(dataForkPath);
+//			}
+//			if(java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
+//				resourceSize=java.nio.file.Files.size(resourceForkPath);
+//			}
+//		}
+//		return dataSize+resourceSize;
+	}
+    
+	  /**
+	   * Returns a {@code Path} object representing the absolute path of this
+	   * path.
+	   *
+	   * <p> If this path is already {@link Path#isAbsolute absolute} then this
+	   * method simply returns this path. Otherwise, this method resolves the path
+	   * in an implementation dependent manner, typically by resolving the path
+	   * against a file system default directory. Depending on the implementation,
+	   * this method may throw an I/O error if the file system is not accessible.
+	   *
+	   * @return  a {@code Path} object representing the absolute path
+	   *
+	   * @throws  java.io.IOError
+	   *          if an I/O error occurs
+	   * @throws  SecurityException
+	   *          In the case of the default provider, a security manager
+	   *          is installed, and this path is not absolute, then the security
+	   *          manager's {@link SecurityManager#checkPropertyAccess(String)
+	   *          checkPropertyAccess} method is invoked to check access to the
+	   *          system property {@code user.dir}
+	   */
+	  /**
+	   * Returns the absolute pathname string of this abstract pathname.
+	   *
+	   * <p> If this abstract pathname is already absolute, then the pathname
+	   * string is simply returned as if by the <code>{@link #getPath}</code>
+	   * method.  If this abstract pathname is the empty abstract pathname then
+	   * the pathname string of the current user directory, which is named by the
+	   * system property <code>user.dir</code>, is returned.  Otherwise this
+	   * pathname is resolved in a system-dependent way.  On UNIX systems, a
+	   * relative pathname is made absolute by resolving it against the current
+	   * user directory.  On Microsoft Windows systems, a relative pathname is made absolute
+	   * by resolving it against the current directory of the drive named by the
+	   * pathname, if any; if not, it is resolved against the current user
+	   * directory.
+	   *
+	   * @return  The absolute pathname string denoting the same file or
+	   *          directory as this abstract pathname
+	   *
+	   * @throws  SecurityException
+	   *          If a required system property value cannot be accessed.
+	   *
+	   * @see     java.io.File#isAbsolute()
+	   */
+	  /**
+	   * Returns the absolute form of this abstract pathname.  Equivalent to
+	   * <code>new&nbsp;File(this.{@link #getAbsolutePath})</code>.
+	   *
+	   * @return  The absolute abstract pathname denoting the same file or
+	   *          directory as this abstract pathname
+	   *
+	   * @throws  SecurityException
+	   *          If a required system property value cannot be accessed.
+	   *
+	   * @since 1.2
+	   */
+	  public Path toAbsolutePath() {
+		  return dataForkPath.toAbsolutePath();
+	  }
+	  /**
+	   * Returns {@code toAbsolutePath} and changes the internal path representation of this FileTMJ accordingly.
+	   * @return
+	   */
+	  public Path absolutize() {
+		  init(toAbsolutePath());
+		  return dataForkPath;
+	  }
+
+/**
+ * Returns the canonical pathname string of this abstract pathname.
+ *
+ * <p> A canonical pathname is both absolute and unique.  The precise
+ * definition of canonical form is system-dependent.  This method first
+ * converts this pathname to absolute form if necessary, as if by invoking the
+ * {@link #getAbsolutePath} method, and then maps it to its unique form in a
+ * system-dependent way.  This typically involves removing redundant names
+ * such as <tt>"."</tt> and <tt>".."</tt> from the pathname, resolving
+ * symbolic links (on UNIX platforms), and converting drive letters to a
+ * standard case (on Microsoft Windows platforms).
+ *
+ * <p> Every pathname that denotes an existing file or directory has a
+ * unique canonical form.  Every pathname that denotes a nonexistent file
+ * or directory also has a unique canonical form.  The canonical form of
+ * the pathname of a nonexistent file or directory may be different from
+ * the canonical form of the same pathname after the file or directory is
+ * created.  Similarly, the canonical form of the pathname of an existing
+ * file or directory may be different from the canonical form of the same
+ * pathname after the file or directory is deleted.
+ *
+ * @return  The canonical pathname string denoting the same file or
+ *          directory as this abstract pathname
+ *
+ * @throws  IOException
+ *          If an I/O error occurs, which is possible because the
+ *          construction of the canonical pathname may require
+ *          filesystem queries
+ *
+ * @throws  SecurityException
+ *          If a required system property value cannot be accessed, or
+ *          if a security manager exists and its <code>{@link
+ *          java.lang.SecurityManager#checkRead}</code> method denies
+ *          read access to the file
+ *
+ * @since   JDK1.1
+ * @see     Path#toRealPath
+ */
+/**
+ * Returns the canonical form of this abstract pathname.  Equivalent to
+ * <code>new&nbsp;File(this.{@link #getCanonicalPath})</code>.
+ *
+ * @return  The canonical pathname string denoting the same file or
+ *          directory as this abstract pathname
+ *
+ * @throws  IOException
+ *          If an I/O error occurs, which is possible because the
+ *          construction of the canonical pathname may require
+ *          filesystem queries
+ *
+ * @throws  SecurityException
+ *          If a required system property value cannot be accessed, or
+ *          if a security manager exists and its <code>{@link
+ *          java.lang.SecurityManager#checkRead}</code> method denies
+ *          read access to the file
+ *
+ * @since 1.2
+ * @see     Path#toRealPath
+ */
+  public Path toCanonicalPath() throws IOException {
+//	  return Paths.get(toCanonicalPathString());
+	  return fileSystem.getPath(toCanonicalPathString());
+//    if (isInvalid()) {
+//        throw new IOException("Invalid file path");
+//    }
+//    return fs.canonicalize(fs.resolve(this));
+//    String canonPath = getCanonicalPath();
+//    return new File(canonPath, fs.prefixLength(canonPath));
+  }
+  public String toCanonicalPathString() throws IOException {
+	  return dataForkPath.toFile().getCanonicalPath();
+  }
+ 
+  /**
+   * ignores the duality of the macOS forks.
+   * @return
+   */
+    public File toFile(){
+  		return dataForkPath.toFile();
+    }
+    
+  /**
+   * Returns a path that is this path with redundant name elements eliminated.
+   *
+   * <p> The precise definition of this method is implementation dependent but
+   * in general it derives from this path, a path that does not contain
+   * <em>redundant</em> name elements. In many file systems, the "{@code .}"
+   * and "{@code ..}" are special names used to indicate the current directory
+   * and parent directory. In such file systems all occurrences of "{@code .}"
+   * are considered redundant. If a "{@code ..}" is preceded by a
+   * non-"{@code ..}" name then both names are considered redundant (the
+   * process to identify such names is repeated until it is no longer
+   * applicable).
+   *
+   * <p> This method does not access the file system; the path may not locate
+   * a file that exists. Eliminating "{@code ..}" and a preceding name from a
+   * path may result in the path that locates a different file than the original
+   * path. This can arise when the preceding name is a symbolic link.
+   *
+   * @return  the resulting path or this path if it does not contain
+   *          redundant name elements; an empty path is returned if this path
+   *          does have a root component and all name elements are redundant
+   *
+   * @see #getParent
+   * @see #toRealPath
+   */
+  /**
+   * Normalizes this URI's path.
+   *
+   * <p> If this URI is opaque, or if its path is already in normal form,
+   * then this URI is returned.  Otherwise a new URI is constructed that is
+   * identical to this URI except that its path is computed by normalizing
+   * this URI's path in a manner consistent with <a
+   * href="http://www.ietf.org/rfc/rfc2396.txt">RFC&nbsp;2396</a>,
+   * section&nbsp;5.2, step&nbsp;6, sub-steps&nbsp;c through&nbsp;f; that is:
+   * </p>
+   *
+   * <ol>
+   *
+   *   <li><p> All {@code "."} segments are removed. </p></li>
+   *
+   *   <li><p> If a {@code ".."} segment is preceded by a non-{@code ".."}
+   *   segment then both of these segments are removed.  This step is
+   *   repeated until it is no longer applicable. </p></li>
+   *
+   *   <li><p> If the path is relative, and if its first segment contains a
+   *   colon character ({@code ':'}), then a {@code "."} segment is
+   *   prepended.  This prevents a relative URI with a path such as
+   *   {@code "a:b/c/d"} from later being re-parsed as an opaque URI with a
+   *   scheme of {@code "a"} and a scheme-specific part of {@code "b/c/d"}.
+   *   <b><i>(Deviation from RFC&nbsp;2396)</i></b> </p></li>
+   *
+   * </ol>
+   *
+   * <p> A normalized path will begin with one or more {@code ".."} segments
+   * if there were insufficient non-{@code ".."} segments preceding them to
+   * allow their removal.  A normalized path will begin with a {@code "."}
+   * segment if one was inserted by step 3 above.  Otherwise, a normalized
+   * path will not contain any {@code "."} or {@code ".."} segments. </p>
+   *
+   * @return  A URI equivalent to this URI,
+   *          but whose path is in normal form
+   */
+  public Path toNormalized() {
+	  return dataForkPath.normalize();
+  }
+  /**
+   * Returns {@code toNormalized} and changes the internal path representation of this FileTMJ accordingly.
+   * @return
+   */
+  public Path normalize() {
+	  init(toNormalized());
+	  return dataForkPath;
+  }
+
+  /**
+   * ignores the duality of the macOS forks.
+   * @return
+   */
+	public Path toPath() {
+		return dataForkPath;
+	}
+
+  /**
+   * Returns the <em>real</em> path of an existing file.
+   *
+   * <p> The precise definition of this method is implementation dependent but
+   * in general it derives from this path, an {@link #isAbsolute absolute}
+   * path that locates the {@link Files#isSameFile same} file as this path, but
+   * with name elements that represent the actual name of the directories
+   * and the file. For example, where filename comparisons on a file system
+   * are case insensitive then the name elements represent the names in their
+   * actual case. Additionally, the resulting path has redundant name
+   * elements removed.
+   *
+   * <p> If this path is relative then its absolute path is first obtained,
+   * as if by invoking the {@link #toAbsolutePath toAbsolutePath} method.
+   *
+   * <p> The {@code options} array may be used to indicate how symbolic links
+   * are handled. By default, symbolic links are resolved to their final
+   * target. If the option {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS} is
+   * present then this method does not resolve symbolic links.
+   *
+   * Some implementations allow special names such as "{@code ..}" to refer to
+   * the parent directory. When deriving the <em>real path</em>, and a
+   * "{@code ..}" (or equivalent) is preceded by a non-"{@code ..}" name then
+   * an implementation will typically cause both names to be removed. When
+   * not resolving symbolic links and the preceding name is a symbolic link
+   * then the names are only removed if it guaranteed that the resulting path
+   * will locate the same file as this path.
+   *
+   * @param   options
+   *          options indicating how symbolic links are handled
+   *
+   * @return  an absolute path represent the <em>real</em> path of the file
+   *          located by this object
+   *
+   * @throws  IOException
+   *          if the file does not exist or an I/O error occurs
+   * @throws  SecurityException
+   *          In the case of the default provider, and a security manager
+   *          is installed, its {@link SecurityManager#checkRead(String) checkRead}
+   *          method is invoked to check read access to the file, and where
+   *          this path is not absolute, its {@link SecurityManager#checkPropertyAccess(String)
+   *          checkPropertyAccess} method is invoked to check access to the
+   *          system property {@code user.dir}
+   */
+  public Path toRealPath(LinkOption... options) throws IOException{
+	  return dataForkPath.toRealPath(options);
+}
+/**
+ * Returns {@code toRealPath} and changes the internal path representation of this FileTMJ accordingly.
+ * @return
+ * @throws IOException 
+ */
+  public Path realize(LinkOption... options) throws IOException {
+	  init(toRealPath(options));
+	  return dataForkPath;
+  }
+
+	 /**
+     * Returns a URI to represent this file/directory.
+     *
+     * <p> This method constructs an absolute {@link URI} with a {@link
+     * URI#getScheme() scheme} equal to the URI scheme that identifies the
+     * provider. The exact form of the scheme specific part is highly provider
+     * dependent.
+     *
+     * <p> In the case of the default provider, the URI is hierarchical with
+     * a {@link URI#getPath() path} component that is absolute. The query and
+     * fragment components are undefined. Whether the authority component is
+     * defined or not is implementation dependent. There is no guarantee that
+     * the {@code URI} may be used to construct a {@link java.io.File java.io.File}.
+     * In particular, if this path represents a Universal Naming Convention (UNC)
+     * path, then the UNC server name may be encoded in the authority component
+     * of the resulting URI. In the case of the default provider, and the file
+     * exists, and it can be determined that the file is a directory, then the
+     * resulting {@code URI} will end with a slash.
+     *
+     * <p> The default provider provides a similar <em>round-trip</em> guarantee
+     * to the {@link java.io.File} class. For a given {@code Path} <i>p</i> it
+     * is guaranteed that
+     * <blockquote><tt>
+     * {@link Paths#get(URI) Paths.get}(</tt><i>p</i><tt>.toUri()).equals(</tt><i>p</i>
+     * <tt>.{@link #toAbsolutePath() toAbsolutePath}())</tt>
+     * </blockquote>
+     * so long as the original {@code Path}, the {@code URI}, and the new {@code
+     * Path} are all created in (possibly different invocations of) the same
+     * Java virtual machine. Whether other providers make any guarantees is
+     * provider specific and therefore unspecified.
+     *
+     * <p> When a file system is constructed to access the contents of a file
+     * as a file system then it is highly implementation specific if the returned
+     * URI represents the given path in the file system or it represents a
+     * <em>compound</em> URI that encodes the URI of the enclosing file system.
+     * A format for compound URIs is not defined in this release; such a scheme
+     * may be added in a future release.
+     *
+     * @return  the URI representing this path
+     *
+     * @throws  java.io.IOError
+     *          if an I/O error occurs obtaining the absolute path, or where a
+     *          file system is constructed to access the contents of a file as
+     *          a file system, and the URI of the enclosing file system cannot be
+     *          obtained
+     *
+     * @throws  SecurityException
+     *          In the case of the default provider, and a security manager
+     *          is installed, the {@link #toAbsolutePath toAbsolutePath} method
+     *          throws a security exception.
+     */
+	public URI toURI() {
+		return dataForkPath.toUri();
+	}
+
+    /**
+     * Constructs a URL from this URI.
+     *
+     * <p> This convenience method works as if invoking it were equivalent to
+     * evaluating the expression {@code new URL(this.toString())} after
+     * first checking that this URI is absolute. </p>
+     *
+     * @return  A URL constructed from this URI
+     *
+     * @throws  IllegalArgumentException
+     *          If this URL is not absolute
+     *
+     * @throws  MalformedURLException
+     *          If a protocol handler for the URL could not be found,
+     *          or if some other error occurred while constructing the URL
+     */
+    public URL toURL() throws MalformedURLException {
+	  	return toURI().toURL();
+    }
+    
+       
   
     /**
      * Return a {@code Stream} that is lazily populated with {@code
@@ -1805,746 +2493,153 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 ////        }
 //    }
     
-    
-    
-    
-    
-    /**
-     * Reads the target of a symbolic link <i>(optional operation)</i>.
-     *
-     * <p> If the file system supports <a href="package-summary.html#links">symbolic
-     * links</a> then this method is used to read the target of the link, failing
-     * if the file is not a symbolic link. The target of the link need not exist.
-     * The returned {@code Path} object will be associated with the same file
-     * system as {@code link}.
-     *
-     * @param   link
-     *          the path to the symbolic link
-     *
-     * @return  a {@code Path} object representing the target of the link
-     *
-     * @throws  UnsupportedOperationException
-     *          if the implementation does not support symbolic links
-     * @throws  NotLinkException
-     *          if the target could otherwise not be read because the file
-     *          is not a symbolic link <i>(optional specific exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          If a security manager denies to read the link.
-																																						
-																																						
-     */
-    public FileTMJ readSymbolicLinkTarget() throws IOException, UnsupportedOperationException,NotLinkException,SecurityException {
-																																
-    	return new FileTMJ(dataForkPath.getFileSystem().provider().readSymbolicLink(dataForkPath));
-    }
-    
-    /**
-     * From java.nio.file.Files
-     * Tests whether a file is a symbolic link.
-     *
-     * <p> Where it is required to distinguish an I/O exception from the case
-     * that the file is not a symbolic link then the file attributes can be
-     * read with the {@link #readAttributes(Path,Class,LinkOption[])
-     * readAttributes} method and the file type tested with the {@link
-     * BasicFileAttributes#isSymbolicLink} method.
-     *
-     * @param   path  The path to the file
-     *
-     * @return  {@code true} if the file is a symbolic link; {@code false} if
-     *          the file does not exist, is not a symbolic link, or it cannot
-     *          be determined if the file is a symbolic link or not.
-     *
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
-     *          method denies read access to the file.
-     */
-    public boolean isSymbolicLink() {
-        try {
-        	return readBasicFileAttributes(dataForkPath,LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
-        } catch (IOException ioe) {
-            return false;
-        }
-    }
-    
-   
-		
-		
-    
-	/**
-	 * From java.nio.file.Files.exists
-	 * Returns the size of a file (in bytes). 
-	 * The size may differ from the actual size on the file system due to compression, support for sparse files, or other reasons. 
-	 * The size of files that are not regular files is implementation specific and therefore unspecified.
-     * @param   options
-     *          options indicating how symbolic links are handled
-     * 
-	 * @return size in bytes, unspecified if directory
-	 * @throws SecurityException - If a security manager exists and its java.lang.SecurityManager.checkRead(java.lang.String) method denies read access to the file
-	 * @throws IOException - if an I/O error occurs
-	 * 
-	 * long java.nio.file.Files.size(Path path) throws IOException
-	 */
-	public long sizeBytes() throws SecurityException, IOException{
-		return sizeBytes(LinkOption.NOFOLLOW_LINKS);
-	}
-	public long sizeBytes(LinkOption...linkOptions) throws SecurityException, IOException{
-		long dataSize=0;
-		long resourceSize=0;
-//		if(!exists(linkOptions)){
-//		}else {
-			// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
-			// So we don't need that separated.
-			try {
-				dataSize=readBasicFileAttributes(dataForkPath, linkOptions).size(); // file exists
-			} catch (IOException e2) { // does not exist or unable to determine if file exists
-				dataSize=-1;
-			}
-			try {
-				resourceSize=readBasicFileAttributes(resourceForkPath, linkOptions).size(); // file exists
-			} catch (IOException e2) { // does not exist or unable to determine if file exists
-				resourceSize=-1;
-			}
-			if(0>dataSize) {
-				if(0>resourceSize) {
-					throw new FileNotFoundException();
-				}else {
-					return resourceSize;
-				}
-			}else if(0>resourceSize){
-				return dataSize;
-			}else {
-				return dataSize+resourceSize;
-			}
-//		}
-//		if(!java.nio.file.Files.exists(dataForkPath, linkOptions) && !java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
-//			throw new FileNotFoundException();
-//		}else {
-//			if(java.nio.file.Files.exists(dataForkPath, linkOptions)) {
-//				dataSize=java.nio.file.Files.size(dataForkPath);
-//			}
-//			if(java.nio.file.Files.exists(resourceForkPath,linkOptions)) {
-//				resourceSize=java.nio.file.Files.size(resourceForkPath);
-//			}
-//		}
-//		return dataSize+resourceSize;
-	}
-    
-    
-	/** returns true, if the object's name was sucessfully changed or need not to be changed, false otherwise. 
-	 * nameNew must not be null
-	 * @throws IOException 
-	 * */
-	public boolean setName(String nameNew) throws IOException {
-		return setName(Paths.get(nameNew));
-	}
-	public boolean setName(Path nameNew) throws IOException {
-//			if(dataForkPath.getFileName().toString().equals(nameNew)){
-//				return true;
-//			}
-			Path parent=dataForkPath.getParent();
-			// try{
-			Path dest=parent.resolve(nameNew);
-			// }
-			
-			try {
-				readBasicFileAttributes(dest, LinkOption.NOFOLLOW_LINKS); // test for any attribute
-				throw new FileAlreadyExistsException(dest.toString());
-			} catch (IOException e) { // does not exist or unable to determine if file exists
-			}
 
-			try {
-				dataForkPath=moveTo(dest);//Dies wirkt sich auch korrekt auf den Ressource Fork aus, jedenfalls unter macOS 10.13.6 und HFS+j
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw e;
-			}
-//			 }catch(Error e){ the error_message number the error_number
-//				if( the error_number is -59 ){
-//					the error_message="This name contains improper characters, such as a colon (:)."
-//				}else{ // the suggested name is too long
-//					the error_message=error_message // "The name is more than 31 characters long."
-//				}
-//				tell me=display dialog the error_message default answer nameNew buttons {"Cancel", "Skip", "OK"} default button 3
-//				copy the result as list={nameNew, button_pressed}
-//				if( the button_pressed is "Skip" ){ return 0
-//				my setFilesystemObjectName(filesystemObject, nameNew)
-//			}
-		return false;
-		}
-	
-	
     /**
-     * Renames the file denoted by this abstract pathname.
+     * Creates a new link (directory entry) for an existing file <i>(optional
+     * operation)</i>.
      *
-     * <p> Many aspects of the behavior of this method are inherently
-     * platform-dependent: The rename operation might not be able to move a
-     * file from one filesystem to another, it might not be atomic, and it
-     * might not succeed if a file with the destination abstract pathname
-     * already exists.  The return value should always be checked to make sure
-     * that the rename operation was successful.
+     * <p> The {@code link} parameter locates the directory entry to create.
+     * The {@code existing} parameter is the path to an existing file. This
+     * method creates a new directory entry for the file so that it can be
+     * accessed using {@code link} as the path. On some file systems this is
+     * known as creating a "hard link". Whether the file attributes are
+     * maintained for the file or for each directory entry is file system
+     * specific and therefore not specified. Typically, a file system requires
+     * that all links (directory entries) for a file be on the same file system.
+     * Furthermore, on some platforms, the Java virtual machine may require to
+     * be started with implementation specific privileges to create hard links
+     * or to create links to directories.
      *
-     * <p> Note that the {@link java.nio.file.Files} class defines the {@link
-     * java.nio.file.Files#move move} method to move or rename a file in a
-     * platform independent manner.
-     *
-     * @param  dest  The new abstract pathname for the named file
-     *
-     * @return  <code>true</code> if and only if the renaming succeeded;
-     *          <code>false</code> otherwise
-     *
-     * @throws  SecurityException
-     *          If a security manager exists and its <code>{@link
-     *          java.lang.SecurityManager#checkWrite(java.lang.String)}</code>
-     *          method denies write access to either the old or new pathnames
-     *
-     * @throws  NullPointerException
-     *          If parameter <code>dest</code> is <code>null</code>
-     */
-    /**
-     * Move or rename a file to a target file.
-     *
-     * <p> By default, this method attempts to move the file to the target
-     * file, failing if the target file exists except if the source and
-     * target are the {@link #isSameFile same} file, in which case this method
-     * has no effect. If the file is a symbolic link then the symbolic link
-     * itself, not the target of the link, is moved. This method may be
-     * invoked to move an empty directory. In some implementations a directory
-     * has entries for special files or links that are created when the
-     * directory is created. In such implementations a directory is considered
-     * empty when only the special entries exist. When invoked to move a
-     * directory that is not empty then the directory is moved if it does not
-     * require moving the entries in the directory.  For example, renaming a
-     * directory on the same {@link FileStore} will usually not require moving
-     * the entries in the directory. When moving a directory requires that its
-     * entries be moved then this method fails (by throwing an {@code
-     * IOException}). To move a <i>file tree</i> may involve copying rather
-     * than moving directories and this can be done using the {@link
-     * #copy copy} method in conjunction with the {@link
-     * #walkFileTree java.nio.file.Files.walkFileTree} utility method.
-     *
-     * <p> The {@code options} parameter may include any of the following:
-     *
-     * <table border=1 cellpadding=5 summary="">
-     * <tr> <th>Option</th> <th>Description</th> </tr>
-     * <tr>
-     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
-     *   <td> If the target file exists, then the target file is replaced if it
-     *     is not a non-empty directory. If the target file exists and is a
-     *     symbolic link, then the symbolic link itself, not the target of
-     *     the link, is replaced. </td>
-     * </tr>
-     * <tr>
-     *   <td> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </td>
-     *   <td> The move is performed as an atomic file system operation and all
-     *     other options are ignored. If the target file exists then it is
-     *     implementation specific if the existing file is replaced or this method
-     *     fails by throwing an {@link IOException}. If the move cannot be
-     *     performed as an atomic file system operation then {@link
-     *     AtomicMoveNotSupportedException} is thrown. This can arise, for
-     *     example, when the target location is on a different {@code FileStore}
-     *     and would require that the file be copied, or target location is
-     *     associated with a different provider to this object. </td>
-     * </table>
-     *
-     * <p> An implementation of this interface may support additional
-     * implementation specific options.
-     *
-     * <p> Moving a file will copy the {@link
-     * BasicFileAttributes#lastModifiedTime last-modified-time} to the target
-     * file if supported by both source and target file stores. Copying of file
-     * timestamps may result in precision loss. An implementation may also
-     * attempt to copy other file attributes but is not required to fail if the
-     * file attributes cannot be copied. When the move is performed as
-     * a non-atomic operation, and an {@code IOException} is thrown, then the
-     * state of the files is not defined. The original file and the target file
-     * may both exist, the target file may be incomplete or some of its file
-     * attributes may not been copied from the original file.
-     *
-     * <p> <b>Usage Examples:</b>
-     * Suppose we want to rename a file to "newname", keeping the file in the
-     * same directory:
-     * <pre>
-     *     Path source = ...
-     *     java.nio.file.Files.move(source, source.resolveSibling("newname"));
-     * </pre>
-     * Alternatively, suppose we want to move a file to new directory, keeping
-     * the same file name, and replacing any existing file of that name in the
-     * directory:
-     * <pre>
-     *     Path source = ...
-     *     Path newdir = ...
-     *     java.nio.file.Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
-     * </pre>
-     *
-     * @param   target
-     *          the path to the target file (may be associated with a different
-     *          provider to the source path)
-     * @param   options
-     *          options specifying how the move should be done
-     *
-     * @return  the path to the target file
-     *
-     * @throws  UnsupportedOperationException
-     *          if the array contains a copy option that is not supported
-     * @throws  FileAlreadyExistsException
-     *          if the target file exists but cannot be replaced because the
-     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
-     *          specific exception)</i>
-     * @throws  DirectoryNotEmptyException
-     *          the {@code REPLACE_EXISTING} option is specified but the file
-     *          cannot be replaced because it is a non-empty directory
-     *          <i>(optional specific exception)</i>
-     * @throws  AtomicMoveNotSupportedException
-     *          if the options array contains the {@code ATOMIC_MOVE} option but
-     *          the file cannot be moved as an atomic file system operation.
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked to check write access to both the source and
-     *          target file.
-     */
-//        public boolean moveTo(File dest, CopyOption... options)throws IOException {
-//        FileSystemProvider provider = provider(source);
-//        if (provider(target) == provider) {
-//            // same provider
-//            provider.move(source, target, options);
-//        } else {
-//            // different providers
-//            copyMoveHelper_moveToForeignTarget(source, target, options);
-//        }
-//        return target;
-//        SecurityManager security = System.getSecurityManager();
-//        if (security != null) {
-//            security.checkWrite(path);
-//            security.checkWrite(dest.path);
-//        }
-//        if (dest == null) {
-//            throw new NullPointerException();
-//        }
-//        if (this.isInvalid() || dest.isInvalid()) {
-//            return false;
-//        }
-//        return fs.rename(this, dest);
-		public FileTMJ moveTo(FileTMJ destination) throws IOException {
-			Path path=moveTo(destination.dataForkPath);
-			return new FileTMJ(path);
-////			public static Path move(Path source, Path target, CopyOption... options) throws IOException  {
-//			        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
-//			        if (destination.getFileSystem().provider() == provider) {
-//			            // same provider
-//			            provider.move(dataForkPath, destination.dataForkPath, StandardCopyOption.ATOMIC_MOVE);
-//			        } else {
-//			            // different providers
-////			        	copyMoveHelper_moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
-//			        	copyMoveHelper_moveToForeignTarget(dataForkPath, destination, StandardCopyOption.ATOMIC_MOVE);
-//			 
-//     copyToForeignTarget(dataForkPath, destination.dataForkPath, convertMoveToCopyOptions(StandardCopyOption.ATOMIC_MOVE));
-//     java.nio.file.Files.delete(dataForkPath);
-// }
-//			        }
-//			        return new FileTMJ(destination);
-////			    }
-		}
-		
-		
-		
-		
-		
-		
-		 /**
-	     * Move or rename a file to a target file.
-	     *
-	     * <p> By default, this method attempts to move the file to the target
-	     * file, failing if the target file exists except if the source and
-	     * target are the {@link #isSameFile same} file, in which case this method
-	     * has no effect. If the file is a symbolic link then the symbolic link
-	     * itself, not the target of the link, is moved. This method may be
-	     * invoked to move an empty directory. In some implementations a directory
-	     * has entries for special files or links that are created when the
-	     * directory is created. In such implementations a directory is considered
-	     * empty when only the special entries exist. When invoked to move a
-	     * directory that is not empty then the directory is moved if it does not
-	     * require moving the entries in the directory.  For example, renaming a
-	     * directory on the same {@link FileStore} will usually not require moving
-	     * the entries in the directory. When moving a directory requires that its
-	     * entries be moved then this method fails (by throwing an {@code
-	     * IOException}). To move a <i>file tree</i> may involve copying rather
-	     * than moving directories and this can be done using the {@link
-	     * #copy copy} method in conjunction with the {@link
-	     * #walkFileTree Files.walkFileTree} utility method.
-	     *
-	     * <p> The {@code options} parameter may include any of the following:
-	     *
-	     * <table border=1 cellpadding=5 summary="">
-	     * <tr> <th>Option</th> <th>Description</th> </tr>
-	     * <tr>
-	     *   <td> {@link StandardCopyOption#REPLACE_EXISTING REPLACE_EXISTING} </td>
-	     *   <td> If the target file exists, then the target file is replaced if it
-	     *     is not a non-empty directory. If the target file exists and is a
-	     *     symbolic link, then the symbolic link itself, not the target of
-	     *     the link, is replaced. </td>
-	     * </tr>
-	     * <tr>
-	     *   <td> {@link StandardCopyOption#ATOMIC_MOVE ATOMIC_MOVE} </td>
-	     *   <td> The move is performed as an atomic file system operation and all
-	     *     other options are ignored. If the target file exists then it is
-	     *     implementation specific if the existing file is replaced or this method
-	     *     fails by throwing an {@link IOException}. If the move cannot be
-	     *     performed as an atomic file system operation then {@link
-	     *     AtomicMoveNotSupportedException} is thrown. This can arise, for
-	     *     example, when the target location is on a different {@code FileStore}
-	     *     and would require that the file be copied, or target location is
-	     *     associated with a different provider to this object. </td>
-	     * </table>
-	     *
-	     * <p> An implementation of this interface may support additional
-	     * implementation specific options.
-	     *
-	     * <p> Moving a file will copy the {@link
-	     * BasicFileAttributes#lastModifiedTime last-modified-time} to the target
-	     * file if supported by both source and target file stores. Copying of file
-	     * timestamps may result in precision loss. An implementation may also
-	     * attempt to copy other file attributes but is not required to fail if the
-	     * file attributes cannot be copied. When the move is performed as
-	     * a non-atomic operation, and an {@code IOException} is thrown, then the
-	     * state of the files is not defined. The original file and the target file
-	     * may both exist, the target file may be incomplete or some of its file
-	     * attributes may not been copied from the original file.
-	     *
-	     * <p> <b>Usage Examples:</b>
-	     * Suppose we want to rename a file to "newname", keeping the file in the
-	     * same directory:
-	     * <pre>
-	     *     Path source = ...
-	     *     Files.move(source, source.resolveSibling("newname"));
-	     * </pre>
-	     * Alternatively, suppose we want to move a file to new directory, keeping
-	     * the same file name, and replacing any existing file of that name in the
-	     * directory:
-	     * <pre>
-	     *     Path source = ...
-	     *     Path newdir = ...
-	     *     Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
-	     * </pre>
-	     *
-‚	     * @param   target
-	     *          the path to the target file (may be associated with a different
-	     *          provider to the source path)
-	     * @param   options
-	     *          options specifying how the move should be done
-	     *
-	     * @return  the path to the target file
-	     *
-	     * @throws  UnsupportedOperationException
-	     *          if the array contains a copy option that is not supported
-	     * @throws  FileAlreadyExistsException
-	     *          if the target file exists but cannot be replaced because the
-	     *          {@code REPLACE_EXISTING} option is not specified <i>(optional
-	     *          specific exception)</i>
-	     * @throws  DirectoryNotEmptyException
-	     *          the {@code REPLACE_EXISTING} option is specified but the file
-	     *          cannot be replaced because it is a non-empty directory
-	     *          <i>(optional specific exception)</i>
-	     * @throws  AtomicMoveNotSupportedException
-	     *          if the options array contains the {@code ATOMIC_MOVE} option but
-	     *          the file cannot be moved as an atomic file system operation.
-	     * @throws  IOException
-	     *          if an I/O error occurs
-	     * @throws  SecurityException
-	     *          In the case of the default provider, and a security manager is
-	     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-	     *          method is invoked to check write access to both the source and
-	     *          target file.
-	     */
-		/**
-		 * Converts the given array of options for moving a file to options suitable
-		 * for copying the file when a move is implemented as copy + delete.
-		 */  
-		private Path moveTo(Path target) throws UnsupportedOperationException,FileAlreadyExistsException,DirectoryNotEmptyException,AtomicMoveNotSupportedException,IOException,SecurityException   {
-	        FileSystemProvider provider = dataForkPath.getFileSystem().provider();
-	        if (target.getFileSystem().provider() == provider) { // same provider
-	            provider.move(dataForkPath, target, StandardCopyOption.ATOMIC_MOVE);
-	        } else {
-	        	// different providers -> copy+delete           
-	        	CopyOption[] newOptions = new CopyOption[2];
-//	           	throw new AtomicMoveNotSupportedException(null, null, "Atomic move between providers is not supported");
-	        	copyMoveHelper_copyToForeignTarget(dataForkPath, target, new CopyOption[] {LinkOption.NOFOLLOW_LINKS,StandardCopyOption.COPY_ATTRIBUTES});
-	        	dataForkPath.getFileSystem().provider().delete(dataForkPath);
-	        }
-	        return target;
-	    }
-
-    
-    
-    /**
-     * Remove this file/directory from the file system.
-     * 
-     * In this is a directory, its contents will be removed, first. Consequently this 
-     * method may not be atomic with respect to other file system operations.
-	 * If this is a symbolic link then the link itself is deleted, not its target.
-     *
-     * @return  {@code true} – if the file/directory was successfully deleted,
-     *          {@code false} – if it could not be deleted because it did not exist
+     * @param   link – the link (directory entry) to create
+     * @param   override – if true and there is a file/directory with the same path as link,
+     *          then that one will be removed first. Otherwise nothing special happens.
+     * @return  {@code true} – if the link was successfully created, {@code false} otherwise
+     * @throws  UnsupportedOperationException – if the implementation does not support symbolic links or the
+     *          array contains an attribute that cannot be set atomically when
+     *          creating the symbolic link
      * @throws  IOException – if an I/O error occurs
-     * @throws  SecurityException – if a security manager denies the operation
+     * @throws  SecurityException – if a security manager denies the write access.
      */
-	    public boolean removeIfExists() throws SecurityException,IOException{
-	    		return removeIfExists(false);
-	    }
-    public boolean removeIfExists(boolean ignoreErrors) throws SecurityException,IOException{
-    	if(isDirectory()) {
-    		removeDirContent(ignoreErrors);
-    	}
-    	return dataForkPath.getFileSystem().provider().deleteIfExists(dataForkPath);
-//    	return java.nio.file.Files.deleteIfExists(dataForkPath);
-//		 * java.nio.file.Files.delete(path);
-//       * = path.getFileSystem().provider().delete(path);
-//		 * boolean java.nio.file.Files.deleteIfExists(path);
-//		 * = path.getFileSystem().provider().deleteIfExists(path)
-//	     * May require to examine if file is a directory. A directory must be empty.
-//	     * This method can be used with the {@link #walkFileTree walkFileTree}
-//	     * method to delete a directory and all entries in the directory, or an
-//	     * entire <i>file-tree</i> where required.
-//    	 * Consequently this method may not be atomic with respect to other file system operations.  
-//	     * If the file is a symbolic link then the link itself is deleted, not its target.
-//	     * @throws  DirectoryNotEmptyException
-//	     * @throws  IOException
-//	     * @throws  SecurityException
-//	     *          If a security manager denies the operation.
-//	     *          {@link SecurityManager#checkDelete(String)} method
-//	     *          is invoked to check delete access to the file
-	    
-//		 * boolean java.io.File.delete();
-//		 * = SecurityManager security = System.getSecurityManager();
-//        if (security != null) { security.checkDelete(path); } // throws SecurityException
-//        if (isInvalid()) { return false; } // if Pfad == char(0)
-//        return fs.delete(this);
-//	     * If a directory, then it must be empty.
-//	     * @return  <code>true</code> if successfully deleted; <code>false</code> otherwise
-//	     * @throws  SecurityException
-    }
-    private void removeDirContent(boolean ignoreErrors) throws SecurityException, IOException {
-    	FileTMJ[] files=containingFiles();
-    	for(FileTMJ file:files) {
-    		if(!file.removeIfExists() && !ignoreErrors) {
-    			throw new IOException("File tree has changed during operation.");
-    		}
-    	}
-    }
-    
-    
-    /**
-     * Atomically creates a new, empty file addressed by this object if a file with 
-     * this name does not yet exist. The check for the
-     * existence of the file and the creation of the file if it does not exist
-     * are a single operation that is atomic with respect to all other
-     * filesystem activities that might affect the file.
-     * <p>Missing directories in the file's path will be create, first, if nesseccary.
-     * <p> The {@code attrs} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the file. Each attribute
-     * is identified by its {@link FileAttribute#name name}. If more than one
-     * attribute of the same name is included in the array then all but the last
-     * occurrence is ignored.
-     * <P>
-     * Note: this method should <i>not</i> be used for file-locking, as
-     * the resulting protocol cannot be made to work reliably. The
-     * {@link java.nio.channels.FileLock FileLock}
-     * facility should be used instead.
-     *
-     * @param   attrs – optional list of file attributes
-     * @return  {@code true} if the file was successfully created, {@code false} if it already existed
-     * @throws  UnsupportedOperationException – if the array contains an attribute that 
-     *          cannot be set atomically when creating the file
-     * @throws  IOException – if an I/O error occurs
-     * @throws  SecurityException – if a security manager denies the write access
-     */
-    public boolean createFileIfNotExists(FileAttribute<?>... attrs) throws IOException {
-    	try {
-    		FileTMJ file=getParent();
-    		if(null!=file) {
-    			file.createDirectory(attrs);
-    		}
-    		// from java.nio.file.Files:
-    		getFileSystem().provider().newByteChannel(
-    			dataForkPath
-    			, EnumSet.<StandardOpenOption>of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
-    			, attrs
-    		).close();
-    		return true;
-    	}catch(FileAlreadyExistsException e) {
+    public boolean createLink(FileTMJ link,boolean override) throws UnsupportedOperationException,FileAlreadyExistsException,SecurityException,IOException  {
+    	if(override) {
+    		link.removeIfExists();
+    	}else if(link.exists()) {
     		return false;
     	}
-    }
-
-    /**
-     * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link #createDirectory createDirectory} method, an exception
-     * is not thrown if the directory could not be created because it already
-     * exists.
-     *
-     * <p> The {@code attrs} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the nonexistent
-     * directories. Each file attribute is identified by its {@link
-     * FileAttribute#name name}. If more than one attribute of the same name is
-     * included in the array then all but the last occurrence is ignored.
-     *
-     * <p> If this method fails, then it may do so after creating some, but not
-     * all, of the parent directories.
-     *
-     * @param   attrs
-     *          an optional list of file attributes to set atomically when
-     *          creating the directory
-     * @return  <code>true</code> if and only if the directory was created,
-     *          along with all necessary parent directories; <code>false</code>
-     *          otherwise
-     * @throws  UnsupportedOperationException
-     *          if the array contains an attribute that cannot be set atomically
-     *          when creating the directory
-     * @throws  FileAlreadyExistsException
-     *          if {@code dir} exists but is not a directory <i>(optional specific
-     *          exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          in the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked prior to attempting to create a directory and
-     *          its {@link SecurityManager#checkRead(String) checkRead} is
-     *          invoked for each parent directory that is checked. If {@code
-     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
-     *          toAbsolutePath} may need to be invoked to get its absolute path.
-     *          This may invoke the security manager's {@link
-     *          SecurityManager#chyyyyyyyyeckPropertyAccess(String) checkPropertyAccess}
-     *          method to check access to the system property {@code user.dir}
-     */
-	 /**
-     * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link #createDirectory createDirectory} method, an exception
-     * is not thrown if the directory could not be created because it already
-     * exists.
-     *
-     * <p> The {@code attrs} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the nonexistent
-     * directories. Each file attribute is identified by its {@link
-     * FileAttribute#name name}. If more than one attribute of the same name is
-     * included in the array then all but the last occurrence is ignored.
-     *
-     * <p> If this method fails, then it may do so after creating some, but not
-     * all, of the parent directories.
-     *
-     * @param   dir
-     *          the directory to create
-     *
-     * @param   attrs
-     *          an optional list of file attributes to set atomically when
-     *          creating the directory
-     *
-     * @return  the directory
-     *
-     * @throws  UnsupportedOperationException
-     *          if the array contains an attribute that cannot be set atomically
-     *          when creating the directory
-     * @throws  FileAlreadyExistsException
-     *          if {@code dir} exists but is not a directory <i>(optional specific
-     *          exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          in the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked prior to attempting to create a directory and
-     *          its {@link SecurityManager#checkRead(String) checkRead} is
-     *          invoked for each parent directory that is checked. If {@code
-     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
-     *          toAbsolutePath} may need to be invoked to get its absolute path.
-     *          This may invoke the security manager's {@link
-     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
-     *          method to check access to the system property {@code user.dir}
-     */
-    public boolean createDirectory(FileAttribute<?>... attributes) throws UnsupportedOperationException,FileAlreadyExistsException,IOException,SecurityException {
-    	Path path;
-    	// attempt to create the directory
     	try {
-    		createAndCheckIsDirectory(dataForkPath, attributes);
-    		path= dataForkPath;
-    	} catch (FileAlreadyExistsException x) {// file exists and is not a directory
-    		throw x;
-    	} catch (IOException x) {
-    		// parent may not exist or other reason
-    	}
-    	SecurityException se = null;
-    	try {
-    		dataForkPath = dataForkPath.toAbsolutePath();
-    	} catch (SecurityException x) {
-    		// don't have permission to get absolute path
-    		se = x;
-    	}
-    	// find a decendent that exists
-    	Path parent = dataForkPath.getParent();
-    	while (parent != null) {
-    		try {
-    			parent.getFileSystem().provider().checkAccess(parent);
-    			break;
-    		} catch (NoSuchFileException x) {
-    			// does not exist
-    		}
-    		parent = parent.getParent();
-    	}
-    	if (parent == null) {
-    		// unable to find existing parent
-    		if (se == null) {
-    			throw new FileSystemException(dataForkPath.toString(), null, "Unable to determine if root directory exists");
-    		} else {
-    			throw se;
-    		}
-    	}
-
-    	// create directories
-    	Path child = parent;
-    	for (Path name: parent.relativize(dataForkPath)) {
-    		child = child.resolve(name);
-    		createAndCheckIsDirectory(child, attributes);
-    	}
-    	path= dataForkPath;
-
-    	if(null!=path) {
-    		init(path);
+    		getFileSystem().provider().createLink(link.dataForkPath, dataForkPath);
     		return true;
+    	}catch(FileAlreadyExistsException e) {
+    		throw new IOException(e); // if this happens, there was a unregular problem with the existence.
     	}
-    	return false;
     }
+    public boolean createLinkIfNotExist(FileTMJ link) throws UnsupportedOperationException,FileAlreadyExistsException,SecurityException,IOException  {
+    	return createLink(link,false);
+    }
+
+
     /**
-     * Used by createDirectories to attempt to create a directory. A no-op
-     * if the directory already exists.
-	 *
-     * @throws  SecurityException
-     *          If a security manager denies read access to the file.
+     * Creates a symbolic link to a target.
+     *
+     * <p> The {@code target} parameter is the target of the link.
+     *
+     * <p> The {@code attributes} parameter is optional {@link FileAttribute
+     * attributes} to set atomically when creating the link. Each attribute is
+     * identified by its {@link FileAttribute#name name}. If more than one attribute
+     * of the same name is included in the array then all but the last occurrence
+     * is ignored.
+     *
+     * <p> Where symbolic links are supported, but the underlying {@link FileStore}
+     * does not support symbolic links, then this may fail with an {@link
+     * IOException}. Additionally, some operating systems may require that the
+     * Java virtual machine be started with implementation specific privileges to
+     * create symbolic links, in which case this method may throw {@code IOException}.
+     *
+     * @param   link – the symbolic link file to create
+     * @param   target – target of the symbolic link
+     * @param   attributes – optional array of attributes to set atomically when creating the
+     *          symbolic link
+     * @return  {@code true} – if the link was successfully created, {@code false} otherwise
+     * @throws  UnsupportedOperationException – if the implementation does not support symbolic links or the
+     *          array contains an attribute that cannot be set atomically when
+     *          creating the symbolic link
+     * @throws  IOException – if an I/O error occurs
+     * @throws  SecurityException – if a security manager denies the write access.
      */
-    private static void createAndCheckIsDirectory(Path path, FileAttribute<?>... attributes) throws IOException,SecurityException{
-        try {
-            path.getFileSystem().provider().createDirectory(path, attributes);
-        } catch (FileAlreadyExistsException x) {
-        	boolean isDirectory;
-        	try {
-        		isDirectory= readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).isDirectory();
-        	} catch (IOException e) {
-        		isDirectory= false;
-        	}
-        	if(!isDirectory) {
-        		throw x;
+    public boolean createSymbolicLink(FileTMJ link,boolean override, FileAttribute<?>... attributes) throws UnsupportedOperationException,SecurityException,IOException  {
+    	if(override) {
+    		link.removeIfExists();
+    	}else if(link.exists()) {
+    		return false;
+    	}
+    	try {
+    		getFileSystem().provider().createSymbolicLink(link.dataForkPath, dataForkPath, attributes);
+    		return true;
+    	}catch(FileAlreadyExistsException e) {
+    		throw new IOException(e); // if this happens, there was a unregular problem with the existence.
+    	}
+    }
+    public boolean createSymbolicLinkIfNotExist(FileTMJ link, FileAttribute<?>... attributes) throws UnsupportedOperationException,SecurityException,IOException  {
+    	return createSymbolicLink(link,false,attributes);
+    }
+    
+       
+            /**
+         * Creates a new empty file. If this is a file creates the file next to it.
+         * If this is a directory creates it inside of it.
+         * Uses prefix and suffix strings to generate its name.
+         *
+         * <p> The details as to how the name of the file is constructed is
+         * implementation dependent and therefore not specified. Where possible
+         * the {@code prefix} and {@code suffix} are used to construct candidate
+         * names in the same manner as the {@link
+         * java.io.File#createTempFile(String,String,File)} method.
+         *
+         * <p> Where used as a <em>work files</em>,
+         * the resulting file may be opened using the {@link
+         * StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that the
+         * file is deleted when the appropriate {@code close} method is invoked.
+         * Alternatively, a {@link Runtime#addShutdownHook shutdown-hook}, or the
+         * {@link java.io.File#deleteOnExit} mechanism may be used to delete the
+         * file automatically.
+         *
+         * <p> The {@code attributes} parameter is optional {@link FileAttribute
+         * file-attributes} to set atomically when creating the file. Each attribute
+         * is identified by its {@link FileAttribute#name name}. If more than one
+         * attribute of the same name is included in the array then all but the last
+         * occurrence is ignored. When no file attributes are specified, then the
+         * resulting file may have more restrictive access permissions to files
+         * created by the {@link java.io.File#createTempFile(String,String,File)}
+         * method.
+         *
+         * @param   prefix – prefix used in generating the file's name;
+         *          may be {@code null}
+         * @param   suffix – suffix used in generating the file's name;
+         *          may be {@code null}, in which case "{@code .tmp}" is used
+         * @param   attributes – optional list of file attributes to set atomically when
+         *          creating the file
+         * @return  newly created file that did not exist before
+         * @throws  IllegalArgumentException – if the prefix or suffix parameters cannot be used to generate
+         *          a candidate file name
+         * @throws  UnsupportedOperationException – if the array contains an attribute that cannot be set atomically
+         *          when creating the directory
+         * @throws  IOException – if an I/O error occurs
+         * @throws  SecurityException – if a security manager exists and denies the write access
+         */
+        /**
+         * Creates a temporary file in the given directory, or in in the
+         * temporary directory if dir is {@code null}.
+         */
+        public FileTMJ createTempFile(String prefix, String suffix, FileAttribute<?>... attributes) throws IOException {
+        	if(isDirectory()) {
+        		return new FileTMJ(tempFileHelper_create(Objects.requireNonNull(dataForkPath),prefix, suffix, false,attributes));
+        	}else {
+        		return new FileTMJ(tempFileHelper_create(Objects.requireNonNull(dataForkPath.getParent()),prefix, suffix, false,attributes));
         	}
         }
-    }    
-
-    public static FileTMJ systemTempDirectory() {
-    	return new FileTMJ(Paths.get(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir"))));
-    }
-
+        public FileTMJ createTempFile(FileAttribute<?>... attributes) throws IOException {
+        	return createTempFile(null,null,attributes);
+        }
     /**
      * Creates a new empty file in the system's temporary directory.
      * Uses prefix and suffix strings to generate its name.
@@ -2596,65 +2691,10 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     public static FileTMJ createTempFileChild(FileAttribute<?>... attributes) throws IOException {
     	return createTempFileChild(null,null,attributes);
     }
-    /**
-     * Creates a new empty file. If this is a file creates the file next to it.
-     * If this is a directory creates it inside of it.
-     * Uses prefix and suffix strings to generate its name.
-     *
-     * <p> The details as to how the name of the file is constructed is
-     * implementation dependent and therefore not specified. Where possible
-     * the {@code prefix} and {@code suffix} are used to construct candidate
-     * names in the same manner as the {@link
-     * java.io.File#createTempFile(String,String,File)} method.
-     *
-     * <p> Where used as a <em>work files</em>,
-     * the resulting file may be opened using the {@link
-     * StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that the
-     * file is deleted when the appropriate {@code close} method is invoked.
-     * Alternatively, a {@link Runtime#addShutdownHook shutdown-hook}, or the
-     * {@link java.io.File#deleteOnExit} mechanism may be used to delete the
-     * file automatically.
-     *
-     * <p> The {@code attributes} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the file. Each attribute
-     * is identified by its {@link FileAttribute#name name}. If more than one
-     * attribute of the same name is included in the array then all but the last
-     * occurrence is ignored. When no file attributes are specified, then the
-     * resulting file may have more restrictive access permissions to files
-     * created by the {@link java.io.File#createTempFile(String,String,File)}
-     * method.
-     *
-     * @param   prefix – prefix used in generating the file's name;
-     *          may be {@code null}
-     * @param   suffix – suffix used in generating the file's name;
-     *          may be {@code null}, in which case "{@code .tmp}" is used
-     * @param   attributes – optional list of file attributes to set atomically when
-     *          creating the file
-     * @return  newly created file that did not exist before
-     * @throws  IllegalArgumentException – if the prefix or suffix parameters cannot be used to generate
-     *          a candidate file name
-     * @throws  UnsupportedOperationException – if the array contains an attribute that cannot be set atomically
-     *          when creating the directory
-     * @throws  IOException – if an I/O error occurs
-     * @throws  SecurityException – if a security manager exists and denies the write access
-     */
-    /**
-     * Creates a temporary file in the given directory, or in in the
-     * temporary directory if dir is {@code null}.
-     */
-    public FileTMJ createTempFile(String prefix, String suffix, FileAttribute<?>... attributes) throws IOException {
-    	if(isDirectory()) {
-    		return new FileTMJ(tempFileHelper_create(Objects.requireNonNull(dataForkPath),prefix, suffix, false,attributes));
-    	}else {
-    		return new FileTMJ(tempFileHelper_create(Objects.requireNonNull(dataForkPath.getParent()),prefix, suffix, false,attributes));
-    	}
-    }
-    public FileTMJ createTempFile(FileAttribute<?>... attributes) throws IOException {
-    	return createTempFile(null,null,attributes);
-    }
+   
 
-
-
+ 
+    
 
     /**
      * Creates a new directory in the system's temporary directory.
@@ -2748,113 +2788,64 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     	return createTempDirectoryChild(null,attributes);
     }
 
+    
+    
+
+    
+    
+    /** Read the given binary file, and return its contents as a byte array.*/ 
+    byte[] readAlternateImpl(String inputFileName){
+      log("Reading in binary file named : " + inputFileName);
+      File file = new File(inputFileName);
+      log("File size: " + file.length());
+      byte[] result = null;
+      try {
+        InputStream input =  new BufferedInputStream(new FileInputStream(file));
+        result = readAndClose(input);
+      }
+      catch (FileNotFoundException ex){
+        log(ex);
+      }
+      return result;
+    }
+    
     /**
-     * Creates a symbolic link to a target.
-     *
-     * <p> The {@code target} parameter is the target of the link.
-     *
-     * <p> The {@code attributes} parameter is optional {@link FileAttribute
-     * attributes} to set atomically when creating the link. Each attribute is
-     * identified by its {@link FileAttribute#name name}. If more than one attribute
-     * of the same name is included in the array then all but the last occurrence
-     * is ignored.
-     *
-     * <p> Where symbolic links are supported, but the underlying {@link FileStore}
-     * does not support symbolic links, then this may fail with an {@link
-     * IOException}. Additionally, some operating systems may require that the
-     * Java virtual machine be started with implementation specific privileges to
-     * create symbolic links, in which case this method may throw {@code IOException}.
-     *
-     * @param   link – the symbolic link file to create
-     * @param   target – target of the symbolic link
-     * @param   attributes – optional array of attributes to set atomically when creating the
-     *          symbolic link
-     * @return  {@code true} – if the link was successfully created, {@code false} otherwise
-     * @throws  UnsupportedOperationException – if the implementation does not support symbolic links or the
-     *          array contains an attribute that cannot be set atomically when
-     *          creating the symbolic link
-     * @throws  IOException – if an I/O error occurs
-     * @throws  SecurityException – if a security manager denies the write access.
-     */
-    public boolean createSymbolicLink(FileTMJ link,boolean override, FileAttribute<?>... attributes) throws UnsupportedOperationException,SecurityException,IOException  {
-    	if(override) {
-    		link.removeIfExists();
-    	}else if(link.exists()) {
-    		return false;
-    	}
-    	try {
-    		getFileSystem().provider().createSymbolicLink(link.dataForkPath, dataForkPath, attributes);
-    		return true;
-    	}catch(FileAlreadyExistsException e) {
-    		throw new IOException(e); // if this happens, there was a unregular problem with the existence.
-    	}
+     Read an input stream, and return it as a byte array.  
+     Sometimes the source of bytes is an input stream instead of a file. 
+     This implementation closes aInput after it's read.
+    */
+    byte[] readAndClose(InputStream input){
+      //carries the data from input to output :    
+      byte[] bucket = new byte[32*1024]; 
+      ByteArrayOutputStream result = null; 
+      try  {
+        try {
+          //Use buffering? No. Buffering avoids costly access to disk or network;
+          //buffering to an in-memory stream makes no sense.
+          result = new ByteArrayOutputStream(bucket.length);
+          int bytesRead = 0;
+          while(bytesRead != -1){
+            //aInput.read() returns -1, 0, or more :
+            bytesRead = input.read(bucket);
+            if(bytesRead > 0){
+              result.write(bucket, 0, bytesRead);
+            }
+          }
+        }
+        finally {
+          input.close();
+          //result.close(); this is a no-operation for ByteArrayOutputStream
+        }
+      }
+      catch (IOException ex){
+        log(ex);
+      }
+      return result.toByteArray();
     }
-    public boolean createSymbolicLinkIfNotExist(FileTMJ link, FileAttribute<?>... attributes) throws UnsupportedOperationException,SecurityException,IOException  {
-    	return createSymbolicLink(link,false,attributes);
-    }
-
-    /**
-     * Creates a new link (directory entry) for an existing file <i>(optional
-     * operation)</i>.
-     *
-     * <p> The {@code link} parameter locates the directory entry to create.
-     * The {@code existing} parameter is the path to an existing file. This
-     * method creates a new directory entry for the file so that it can be
-     * accessed using {@code link} as the path. On some file systems this is
-     * known as creating a "hard link". Whether the file attributes are
-     * maintained for the file or for each directory entry is file system
-     * specific and therefore not specified. Typically, a file system requires
-     * that all links (directory entries) for a file be on the same file system.
-     * Furthermore, on some platforms, the Java virtual machine may require to
-     * be started with implementation specific privileges to create hard links
-     * or to create links to directories.
-     *
-     * @param   link – the link (directory entry) to create
-     * @param   override – if true and there is a file/directory with the same path as link,
-     *          then that one will be removed first. Otherwise nothing special happens.
-     * @return  {@code true} – if the link was successfully created, {@code false} otherwise
-     * @throws  UnsupportedOperationException – if the implementation does not support symbolic links or the
-     *          array contains an attribute that cannot be set atomically when
-     *          creating the symbolic link
-     * @throws  IOException – if an I/O error occurs
-     * @throws  SecurityException – if a security manager denies the write access.
-     */
-    public boolean createLink(FileTMJ link,boolean override) throws UnsupportedOperationException,FileAlreadyExistsException,SecurityException,IOException  {
-    	if(override) {
-    		link.removeIfExists();
-    	}else if(link.exists()) {
-    		return false;
-    	}
-    	try {
-    		getFileSystem().provider().createLink(link.dataForkPath, dataForkPath);
-    		return true;
-    	}catch(FileAlreadyExistsException e) {
-    		throw new IOException(e); // if this happens, there was a unregular problem with the existence.
-    	}
-    }
-    public boolean createLinkIfNotExist(FileTMJ link) throws UnsupportedOperationException,FileAlreadyExistsException,SecurityException,IOException  {
-    	return createLink(link,false);
-    }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+  
 
 
-      
+    
     public byte[] readDataFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
 //    	if(!exists()) {
 //    		throw new FileNotFoundException(dataForkPath+" does not exist!");
@@ -2925,6 +2916,18 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return null;
 	}
       
+    
+
+    public static FileTMJ systemTempDirectory() {
+	return new FileTMJ(Paths.get(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir"))));
+}
+
+
+    
+    
+    
+    
+    
       /**
        Write a byte array to the given file. 
        Writing binary data is significantly simpler than reading it. 
@@ -2947,56 +2950,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
         catch(IOException ex){
           log(ex);
         }
-      }
-      
-      /** Read the given binary file, and return its contents as a byte array.*/ 
-      byte[] readAlternateImpl(String inputFileName){
-        log("Reading in binary file named : " + inputFileName);
-        File file = new File(inputFileName);
-        log("File size: " + file.length());
-        byte[] result = null;
-        try {
-          InputStream input =  new BufferedInputStream(new FileInputStream(file));
-          result = readAndClose(input);
-        }
-        catch (FileNotFoundException ex){
-          log(ex);
-        }
-        return result;
-      }
-      
-      /**
-       Read an input stream, and return it as a byte array.  
-       Sometimes the source of bytes is an input stream instead of a file. 
-       This implementation closes aInput after it's read.
-      */
-      byte[] readAndClose(InputStream input){
-        //carries the data from input to output :    
-        byte[] bucket = new byte[32*1024]; 
-        ByteArrayOutputStream result = null; 
-        try  {
-          try {
-            //Use buffering? No. Buffering avoids costly access to disk or network;
-            //buffering to an in-memory stream makes no sense.
-            result = new ByteArrayOutputStream(bucket.length);
-            int bytesRead = 0;
-            while(bytesRead != -1){
-              //aInput.read() returns -1, 0, or more :
-              bytesRead = input.read(bucket);
-              if(bytesRead > 0){
-                result.write(bucket, 0, bytesRead);
-              }
-            }
-          }
-          finally {
-            input.close();
-            //result.close(); this is a no-operation for ByteArrayOutputStream
-          }
-        }
-        catch (IOException ex){
-          log(ex);
-        }
-        return result.toByteArray();
       }
       
       private static void log(Object thing){
