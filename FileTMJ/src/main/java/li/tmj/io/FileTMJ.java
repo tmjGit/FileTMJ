@@ -5,9 +5,11 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,11 +26,12 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemLoopException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.LinkPermission;
@@ -60,12 +63,351 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import li.tmj.io.FileTMJ.CompareResult.CompareResultDetail;
 import sun.security.action.GetPropertyAction;
+import java.lang.annotation.Native;
 
 public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializable {
 	private static final long serialVersionUID = 5094284926669869769L;
-	private FileSystem fileSystem;
+	private FileSystem nioFileSystem;
+//	private java.io.FileSystem ioFileSystem;
 	private Path dataForkPath;
 	private Path resourceForkPath;
+	
+	
+	/* win jdk1.8.0_191
+	 * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+	 * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+	 */
+	/** @since 1.8 */
+//	class java.io.DefaultFileSystem {
+	    /** Return the FileSystem object for Windows platform. */
+//	    public static FileSystem getFileSystem() {
+//	        return new WinNTFileSystem();
+//	    }
+//	}
+
+	/* macOS jdk1.8.0_192
+	 * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+	 * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+	 */
+	/** @since 1.8 */
+//	class java.io.DefaultFileSystem {
+	    /** Return the FileSystem object for Unix-based platform. */
+//	    public static FileSystem getFileSystem() {
+//	        return new UnixFileSystem();
+//	    }
+//	}
+
+	
+	
+//	java.io.FileSystem winFS;
+	
+	
+
+
+	// @since 1.8
+	private static class JavaIoDefaultFileSystem {
+		/**
+		 * Return the FileSystem object for Unix-based platform.
+		 */
+		public static JavaIoFileSystem getFileSystem() {
+			return null;
+//			return new UnixFileSystem();
+//			return new WinNTFileSystem();
+	    }
+	}
+//	sun.nio.fs.UnixFileSystem nio_ufs;
+//	java.io.UnixFileSystem io_ufs;
+	
+
+//	import java.security.AccessController;
+//	import sun.security.action.GetPropertyAction;
+	private class JavaIoUnixFileSystem extends JavaIoFileSystem {
+	    private final char slash;
+	    private final char colon;
+	    private final String javaHome;
+
+	    public JavaIoUnixFileSystem() {
+	        slash = AccessController.doPrivileged( new GetPropertyAction("file.separator")).charAt(0);
+	        colon = AccessController.doPrivileged( new GetPropertyAction("path.separator")).charAt(0);
+	        javaHome = AccessController.doPrivileged( new GetPropertyAction("java.home"));
+	    }
+
+	    public char getSeparator() {
+	        return slash;
+	    }
+	    public char getPathSeparator() {
+	        return colon;
+	    }
+
+//	    /* A normal Unix pathname contains no duplicate slashes and does not end
+//	       with a slash.  It may be the empty string. */
+//
+//	    /* Normalize the given pathname, whose length is len, starting at the given
+//	       offset; everything before this offset is already normal. */
+//	    private String normalize(String pathname, int len, int off) {
+//	        if (len == 0) return pathname;
+//	        int n = len;
+//	        while ((n > 0) && (pathname.charAt(n - 1) == '/')) n--;
+//	        if (n == 0) return "/";
+//	        StringBuffer sb = new StringBuffer(pathname.length());
+//	        if (off > 0) sb.append(pathname.substring(0, off));
+//	        char prevChar = 0;
+//	        for (int i = off; i < n; i++) {
+//	            char c = pathname.charAt(i);
+//	            if ((prevChar == '/') && (c == '/')) continue;
+//	            sb.append(c);
+//	            prevChar = c;
+//	        }
+//	        return sb.toString();
+//	    }
+//
+//	    /* Check that the given pathname is normal.  If not, invoke the real
+//	       normalizer on the part of the pathname that requires normalization.
+//	       This way we iterate through the whole pathname string only once. */
+//	    public String normalize(String pathname) {
+//	        int n = pathname.length();
+//	        char prevChar = 0;
+//	        for (int i = 0; i < n; i++) {
+//	            char c = pathname.charAt(i);
+//	            if ((prevChar == '/') && (c == '/'))
+//	                return normalize(pathname, n, i - 1);
+//	            prevChar = c;
+//	        }
+//	        if (prevChar == '/') return normalize(pathname, n, n - 1);
+//	        return pathname;
+//	    }
+//
+//	    public int prefixLength(String pathname) {
+//	        if (pathname.length() == 0) return 0;
+//	        return (pathname.charAt(0) == '/') ? 1 : 0;
+//	    }
+
+//	    public String resolve(String parent, String child) {
+//	        if (child.equals("")) return parent;
+//	        if (child.charAt(0) == '/') {
+//	            if (parent.equals("/")) return child;
+//	            return parent + child;
+//	        }
+//	        if (parent.equals("/")) return parent + child;
+//	        return parent + '/' + child;
+//	    }
+
+	    public String getDefaultParent() {
+	        return "/";
+	    }
+
+//
+//	    public boolean isAbsolute(File f) {
+//	        return (f.getPrefixLength() != 0);
+//	    }
+
+
+	    // Caches for canonicalization results to improve startup performance.
+	    // The first cache handles repeated canonicalizations of the same path
+	    // name. The prefix cache handles repeated canonicalizations within the
+	    // same directory, and must not create results differing from the true
+	    // canonicalization algorithm in canonicalize_md.c. For this reason the
+	    // prefix cache is conservative and is not used for complex path names.
+//	    private ExpiringCache cache = new ExpiringCache();
+	    // On Unix symlinks can jump anywhere in the file system, so we only
+	    // treat prefixes in java.home as trusted and cacheable in the
+	    // canonicalization algorithm
+//	    private ExpiringCache javaHomePrefixCache = new ExpiringCache();
+
+//	    public String canonicalize(String path) throws IOException {
+//	        if (!useCanonCaches) {
+//	            return canonicalize0(path);
+//	        } else {
+//	            String res = cache.get(path);
+//	            if (res == null) {
+//	                String dir = null;
+//	                String resDir = null;
+//	                if (useCanonPrefixCache) {
+//	                    // Note that this can cause symlinks that should
+//	                    // be resolved to a destination directory to be
+//	                    // resolved to the directory they're contained in
+//	                    dir = parentOrNull(path);
+//	                    if (dir != null) {
+//	                        resDir = javaHomePrefixCache.get(dir);
+//	                        if (resDir != null) {
+//	                            // Hit only in prefix cache; full path is canonical
+//	                            String filename = path.substring(1 + dir.length());
+//	                            res = resDir + slash + filename;
+//	                            cache.put(dir + slash + filename, res);
+//	                        }
+//	                    }
+//	                }
+//	                if (res == null) {
+//	                    res = canonicalize0(path);
+//	                    cache.put(path, res);
+//	                    if (useCanonPrefixCache &&
+//	                        dir != null && dir.startsWith(javaHome)) {
+//	                        resDir = parentOrNull(res);
+//	                        // Note that we don't allow a resolved symlink
+//	                        // to elsewhere in java.home to pollute the
+//	                        // prefix cache (java.home prefix cache could
+//	                        // just as easily be a set at this point)
+//	                        if (resDir != null && resDir.equals(dir)) {
+//	                            File f = new File(res);
+//	                            if (f.exists() && !f.isDirectory()) {
+//	                                javaHomePrefixCache.put(dir, resDir);
+//	                            }
+//	                        }
+//	                    }
+//	                }
+//	            }
+//	            return res;
+//	        }
+//	    }
+//	    private native String canonicalize0(String path) throws IOException;
+	    // Best-effort attempt to get parent of this path; used for
+	    // optimization of filename canonicalization. This must return null for
+	    // any cases where the code in canonicalize_md.c would throw an
+	    // exception or otherwise deal with non-simple pathnames like handling
+	    // of "." and "..". It may conservatively return null in other
+	    // situations as well. Returning null will cause the underlying
+	    // (expensive) canonicalization routine to be called.
+//	    static String parentOrNull(String path) {
+//	        if (path == null) return null;
+//	        char sep = File.separatorChar;
+//	        int last = path.length() - 1;
+//	        int idx = last;
+//	        int adjacentDots = 0;
+//	        int nonDotCount = 0;
+//	        while (idx > 0) {
+//	            char c = path.charAt(idx);
+//	            if (c == '.') {
+//	                if (++adjacentDots >= 2) {
+//	                    // Punt on pathnames containing . and ..
+//	                    return null;
+//	                }
+//	            } else if (c == sep) {
+//	                if (adjacentDots == 1 && nonDotCount == 0) {
+//	                    // Punt on pathnames containing . and ..
+//	                    return null;
+//	                }
+//	                if (idx == 0 ||
+//	                    idx >= last - 1 ||
+//	                    path.charAt(idx - 1) == sep) {
+//	                    // Punt on pathnames containing adjacent slashes
+//	                    // toward the end
+//	                    return null;
+//	                }
+//	                return path.substring(0, idx);
+//	            } else {
+//	                ++nonDotCount;
+//	                adjacentDots = 0;
+//	            }
+//	            --idx;
+//	        }
+//	        return null;
+//	    }
+
+	    public native int getBooleanAttributes0(File f);
+
+//	    public int getBooleanAttributes(File f) {
+//	        int rv = getBooleanAttributes0(f);
+//	        String name = f.getName();
+//	        boolean hidden = (name.length() > 0) && (name.charAt(0) == '.');
+//	        return rv | (hidden ? BA_HIDDEN : 0);
+//	    }
+
+	    public native boolean checkAccess(File f, int access);
+	    public native long getLastModifiedTime(File f);
+	    public native boolean setPermission(File f, int access, boolean enable, boolean owneronly);
+
+
+//	    public boolean rename(File f1, File f2) {
+//	        // Keep canonicalization caches in sync after file deletion
+//	        // and renaming operations. Could be more clever than this
+//	        // (i.e., only remove/update affected entries) but probably
+//	        // not worth it since these entries expire after 30 seconds
+//	        // anyway.
+//	        cache.clear();
+//	        javaHomePrefixCache.clear();
+//	        return rename0(f1, f2);
+//	    }
+	    private native boolean rename0(File f1, File f2);
+	    public native boolean setLastModifiedTime(File f, long time);
+	    public native boolean setReadOnly(File f);
+
+	    public File[] listRoots() {
+	        try {
+	            SecurityManager security = System.getSecurityManager();
+	            if (security != null) {
+	                security.checkRead("/");
+	            }
+	            return new File[] { new File("/") };
+	        } catch (SecurityException x) {
+	            return new File[0];
+	        }
+	    }
+
+	    
+	}
+
+	
+	private static class JavaIoFile{
+		// The FileSystem object representing the platform's local file system.
+		//private static final java.io.FileSystem fs = DefaultFileSystem.getFileSystem();
+		private static final JavaIoFileSystem fs = JavaIoDefaultFileSystem.getFileSystem();
+		/**
+		 * The system-dependent default name-separator character.  This field is
+		 * initialized to contain the first character of the value of the system
+		 * property <code>file.separator</code>.  On UNIX systems the value of this
+		 * field is <code>'/'</code>; on Microsoft Windows systems it is <code>'\\'</code>.
+		 *
+		 * @see     java.lang.System#getProperty(java.lang.String)
+		 */
+		public static final char separatorChar = fs.getSeparator();
+
+		/**
+		 * The system-dependent default name-separator character, represented as a
+		 * string for convenience.  This string contains a single character, namely
+		 * <code>{@link #separatorChar}</code>.
+		 */
+		public static final String separator = "" + separatorChar;
+
+		/**
+		 * The system-dependent path-separator character.  This field is
+		 * initialized to contain the first character of the value of the system
+		 * property <code>path.separator</code>.  This character is used to
+		 * separate filenames in a sequence of files given as a <em>path list</em>.
+		 * On UNIX systems, this character is <code>':'</code>; on Microsoft Windows systems it
+		 * is <code>';'</code>.
+		 *
+		 * @see     java.lang.System#getProperty(java.lang.String)
+		 */
+		public static final char pathSeparatorChar = fs.getPathSeparator();
+
+		/**
+		 * The system-dependent path-separator character, represented as a string
+		 * for convenience.  This string contains a single character, namely
+		 * <code>{@link #pathSeparatorChar}</code>.
+		 */
+		public static final String pathSeparator = "" + pathSeparatorChar;
+	}
+
+	// Package-private abstract class for the local filesystem abstraction.
+	private abstract class JavaIoFileSystem {
+		/**
+		 * Return the local filesystem's name-separator character.
+		 */
+		public abstract char getSeparator();
+		/**
+		 * Return the local filesystem's path-separator character.
+		 */
+		public abstract char getPathSeparator();
+		/**
+		 * List the available filesystem roots.
+		 */
+		public abstract File[] listRoots();
+	}
+
+	
+	
+	
+	
 	
     /**
      * The system-dependent default name-separator character.  This field is
@@ -75,6 +417,14 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *
      * @see     java.lang.System#getProperty(java.lang.String)
      */
+//    private static final java.io.FileSystem fs = DefaultFileSystem.getFileSystem();
+//    public static final char separatorChar2 = fs.getSeparator();
+//    java.io.FileSystem
+//    java.nio.file.FileSystem
+//	public char separatorChar() {
+//		Files.
+//		return fileSystem.getSeparator();
+//	}
     public static final char separatorChar = '?';//TODO IMPLEMENT! fs.getSeparator();
 
     /**
@@ -175,9 +525,9 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	private void init(Path path) {
 		dataForkPath=path;
 		if(null==dataForkPath) {
-			fileSystem=null;
+			nioFileSystem=null;
 		}else {
-			fileSystem=dataForkPath.getFileSystem();		
+			nioFileSystem=dataForkPath.getFileSystem();		
 		}
 		resourceForkPath=resourceFork(dataForkPath);
 	}
@@ -188,16 +538,14 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	}
 
 	public boolean hasDataFork() throws IOException {
-//	    	FileSystem dataForkPath.getFileSystem())		dataForkPath.getFileSystem().getClass().getSimpleName()	"MacOSXFileSystem"
-		  	//System.getProperty("os.name")		"Mac OS X"	bei macOS 10.13.6 High Sierra
 		return hasFork(dataForkPath);
 	}
 	public boolean hasResourceFork() throws IOException {
 		return hasFork(resourceForkPath);
 	}
-		private boolean hasFork(Path path) throws IOException {
+	private static boolean hasFork(Path path) throws IOException {
 		// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
-		// So we don't need that separated.
+		// So we don't need to separate exists and size.
 		try {
 			return 0<readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).size(); // file exists and is not empty
 		} catch (IOException x) { // does not exist or unable to determine if file exists
@@ -207,7 +555,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	
 	
     /**
-     * from: java.nio.file.Files.readAttributes und java.nio.file.Files.provider
+     * From: java.nio.file.Files.readAttributes and java.nio.file.Files.provider
      * Reads a file's attributes as a bulk operation.
      *
      * <p> The {@code type} parameter is the type of the attributes required
@@ -230,73 +578,72 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * Suppose we want to read a file's attributes in bulk:
      * <pre>
      *    Path path = ...
-     *    BasicFileAttributes attrs = java.nio.file.Files.readAttributes(path, BasicFileAttributes.class);
+     *    BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
      * </pre>
      * Alternatively, suppose we want to read file's POSIX attributes without
      * following symbolic links:
      * <pre>
-     *    PosixFileAttributes attrs = java.nio.file.Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
+     *    PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class, NOFOLLOW_LINKS);
      * </pre>
      *
      * @param   <A>
      *          The {@code BasicFileAttributes} type
      * @param   path
-     *          the path to the file
+     *          the path to a file/folder
      * @param   type
-     *          the {@code Class} of the file attributes required
-     *          to read
+     *          the {@code Class} of the file attributes required to read
      * @param   options
      *          options indicating how symbolic links are handled
      *
-     * @return  the file attributes
+     * @return  the path's attributes
      *
      * @throws  UnsupportedOperationException
-     *          if an attributes of the given type are not supported
+     *          if attributes of the given type are not supported
      * @throws  IOException
      *          if an I/O error occurs
      * @throws  SecurityException
-     *          In the case of the default provider, a security manager is
-     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
-     *          method is invoked to check read access to the file. If this
-     *          method is invoked to read security sensitive attributes then the
-     *          security manager may be invoke to check for additional permissions.
-     */
-    private static BasicFileAttributes readBasicFileAttributes(Path path, LinkOption... options) throws IOException {
-    	return path.getFileSystem().provider().readAttributes(path, BasicFileAttributes.class, options);
-    }
-    private static <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
+     *          If a security manager denies read access to the path.
+     */  
+	private static <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException,SecurityException,UnsupportedOperationException {
     	return path.getFileSystem().provider().readAttributes(path, type, options);
     }
-
+    private static BasicFileAttributes readBasicFileAttributes(Path path, LinkOption... options) throws IOException,SecurityException {
+    	return readAttributes(path, BasicFileAttributes.class, options);
+    }
+    private BasicFileAttributes readBasicFileAttributes(LinkOption... options) throws IOException,SecurityException {
+    	return readBasicFileAttributes(dataForkPath, options);
+    }
 	
     /**
-     * Resolve the given path against this path.
+     * Resolve the given path against this file object.
      *
-     * <p> If the {@code other} parameter is an {@link #isAbsolute() absolute}
-     * path then this method trivially returns {@code other}. If {@code other}
-     * is an <i>empty path</i> then this method trivially returns this path.
-     * Otherwise this method considers this path to be a directory and resolves
-     * the given path against this path. In the simplest case, the given path
-     * does not have a {@link #getRoot root} component, in which case this method
-     * <em>joins</em> the given path to this path and returns a resulting path
-     * that {@link #endsWith ends} with the given path. Where the given path has
-     * a root component then resolution is highly implementation dependent and
+     * <p> If the {@code child} parameter is an {@link #isAbsolute() absolute}
+     * path then this method returns the file object corresponding to {@code child}.
+     * If {@code child}
+     * is an <i>empty path</i> then this method returns this file object.
+     * Otherwise this method considers this file object to be a directory and resolves
+     * the given path against it.
+     * If the given path
+     * does not have a {@link #getRoot root} component, this method
+     * <em>joins</em> the it to this file object and returns a resulting file object
+     * that corresponds with the given path inside of this file object.
+     * If the given path has
+     * a root component, the result is implementation dependent and
      * therefore unspecified.
+     [hä? mit root aber nicht isAbsolute?]
      *
-     * Converts a given path string to a {@code Path} and resolves it against
+     * Converts a given path to a {@code FileTMJ} and resolves it against
      * this {@code FileTMJ} in exactly the manner specified by the {@link
      * #resolve(Path) resolve} method. For example, suppose that the name
      * separator is "{@code /}" and a path represents "{@code foo/bar}", then
      * invoking this method with the path string "{@code gus}" will result in
      * a FileTMJ representing the path "{@code foo/bar/gus}".
      *
-     * @param   other
-     *          the path string to resolve against this file
+     * @param   child - path string to resolve against this file
      *
-     * @return  the resulting path
+     * @return  resulting file object
      *
-     * @throws  InvalidPathException
-     *          if the path string cannot be converted to a Path.
+     * @throws  InvalidPathException - if the path cannot be converted to a Path.
      *
      * @see FileSystem#getPath
      */
@@ -327,68 +674,75 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      */
     public int childDepth(FileTMJ child) {
 		throw new RuntimeException("Method not implemented, yet!"); //TODO IMPLEMENT!
-	}
-
-    
-    
-
-    
+	}   
+       
     /**
-     * Returns an array of strings naming the files and directories in the
-     * directory denoted by this abstract pathname.
+     * Returns an array of files/folders denoting the files and directories in the
+     * directory denoted by this file/folder.
      *
-     * <p> If this abstract pathname does not denote a directory, then this
-     * method returns {@code null}.  Otherwise an array of strings is
-     * returned, one for each file or directory in the directory.  Names
-     * denoting the directory itself and the directory's parent directory are
-     * not included in the result.  Each string is a file name rather than a
-     * complete path.
+     * <p> If this object does not denote a directory, then this
+     * method returns {@code null}.  Otherwise an array is
+     * returned, with one element for each file or directory in this directory. Elements
+     * denoting this directory itself and this directory's parent are
+     * not included in the result.
      *
-     * <p> There is no guarantee that the name strings in the resulting array
-     * will appear in any specific order; they are not, in particular,
-     * guaranteed to appear in alphabetical order.
+     * <p> There is no guarantee that the files/folders in the resulting array
+     * will appear in any specific order.
      *
-     * <p> Note that the {@link java.nio.file.Files} class defines the {@link
-     * java.nio.file.Files#newDirectoryStream(Path) newDirectoryStream} method to
-     * open a directory and iterate over the names of the files in the directory.
-     * This may use less resources when working with very large directories, and
-     * may be more responsive when working with remote directories.
-     *
-     * @return  An array of strings naming the files and directories in the
-     *          directory denoted by this abstract pathname.  The array will be
-     *          empty if the directory is empty.  Returns {@code null} if
+     * @return  An array of FileTMJ objects denoting the files and directories in this
+     *          directory denoted by this object. The array will be
+     *          empty if the directory is empty. Returns {@code null} if
      *          this abstract pathname does not denote a directory, or if an
      *          I/O error occurs.
      *
-     * @throws  SecurityException
-     *          If a security manager exists and its {@link
-     *          SecurityManager#checkRead(String)} method denies read access to
-     *          the directory
+     * @throws  SecurityException - If a security manager denies read access to this directory
      */
+    public FileTMJ[] containingFiles() throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+    	return containingFilepathsStream(path->true)
+    			.toArray(FileTMJ[]::new);
+    }    
     /**
-     * Returns an array of abstract pathnames denoting the files in the
-     * directory denoted by this abstract pathname.
+     * Stream<Path> java.nio.file.Files.list(Path dir) throws IOException
+		Return a lazily populated Stream, the elements of which are the entries in the directory. The listing is not recursive.
+		The elements of the stream are Path objects that are obtained as if by resolving the name of the directory entry against dir. Some file systems maintain special links to the directory itself and the directory's parent directory. Entries representing these links are not included.
+		The stream is weakly consistent. It is thread safe but does not freeze the directory while iterating, so it may (or may not) reflect updates to the directory that occur after returning from this method.
+		The returned stream encapsulates a DirectoryStream. If timely disposal of file system resources is required, the try-with-resources construct should be used to ensure that the stream's close method is invoked after the stream operations are completed.
+		Operating on a closed stream behaves as if the end of stream has been reached. Due to read-ahead, one or more elements may be returned after the stream has been closed.
+		If an IOException is thrown when accessing the directory after this method has returned, it is wrapped in an UncheckedIOException which will be thrown from the method that caused the access to take place.
+		Parameters:
+		dir The path to the directory
+		Returns:
+		The Stream describing the content of the directory
+		Throws:
+		NotDirectoryException - if the file could not otherwise be opened because it is not a directory (optional specific exception)
+		IOException - if an I/O error occurs when opening the directory
+		SecurityException - In the case of the default provider, and a security manager is installed, the checkRead method is invoked to check read access to the directory.
+		Since:
+		1.8
+		See Also:
+		newDirectoryStream(Path)
+     * @throws IOException,SecurityException,NotDirectoryException
+     * 		NoSuchFileException - if this FileTMJ does not exist and so cannot contain anything
+     */
+    public Stream<FileTMJ> containingFilesStream() throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+    	return containingFilepathsStream(path->true)
+    			.map(path->new FileTMJ(path));
+    }    
+    /**
+     * Returns an array of abstract pathnames denoting the files and
+     * directories in the directory denoted by this abstract pathname that
+     * satisfy the specified filter.  The behavior of this method is the same
+     * as that of the {@link #listFiles()} method, except that the pathnames in
+     * the returned array must satisfy the filter.  If the given {@code filter}
+     * is {@code null} then all pathnames are accepted.  Otherwise, a pathname
+     * satisfies the filter if and only if the value {@code true} results when
+     * the {@link FilenameFilter#accept
+     * FilenameFilter.accept(File,&nbsp;String)} method of the filter is
+     * invoked on this abstract pathname and the name of a file or directory in
+     * the directory that it denotes.
      *
-     * <p> If this abstract pathname does not denote a directory, then this
-     * method returns {@code null}.  Otherwise an array of {@code File} objects
-     * is returned, one for each file or directory in the directory.  Pathnames
-     * denoting the directory itself and the directory's parent directory are
-     * not included in the result.  Each resulting abstract pathname is
-     * constructed from this abstract pathname using the {@link #File(File,
-     * String) File(File,&nbsp;String)} constructor.  Therefore if this
-     * pathname is absolute then each resulting pathname is absolute; if this
-     * pathname is relative then each resulting pathname will be relative to
-     * the same directory.
-     *
-     * <p> There is no guarantee that the name strings in the resulting array
-     * will appear in any specific order; they are not, in particular,
-     * guaranteed to appear in alphabetical order.
-     *
-     * <p> Note that the {@link java.nio.file.Files} class defines the {@link
-     * java.nio.file.Files#newDirectoryStream(Path) newDirectoryStream} method
-     * to open a directory and iterate over the names of the files in the
-     * directory. This may use less resources when working with very large
-     * directories.
+     * @param  filter
+     *         A filename filter
      *
      * @return  An array of abstract pathnames denoting the files and
      *          directories in the directory denoted by this abstract pathname.
@@ -402,84 +756,42 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          the directory
      *
      * @since  1.2
+     * @see java.nio.file.Files#newDirectoryStream(Path,String)
      */
-	public FileTMJ[] containingFiles() throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-																														
-		return containingFilesStream().toArray(FileTMJ[]::new);
-																													 
-//        SecurityManager security = System.getSecurityManager();
-//        if (security != null) {
-//            security.checkRead(path);
-//        }
-//        if (isInvalid()) {
-//            return null;
-//        }
-//        return fs.list(this);
-//        String[] ss = list();
-//        if (ss == null) return null;
-//        int n = ss.length;
-//        File[] fs = new File[n];
-//        for (int i = 0; i < n; i++) {
-//            fs[i] = new File(ss[i], this);
-//        }
-//        return fs;
+    public FileTMJ[] containingFiles(FilenameFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+    	return containingFilepathsStream(path->filter.accept(path.toFile(), path.getFileName().toString()))
+    			.toArray(FileTMJ[]::new);
     }
-
-   
-	private static class AcceptAllFilter implements DirectoryStream.Filter<Path> {
-		private AcceptAllFilter() { }
-		@Override public boolean accept(Path entry) { return true; }
-		static final AcceptAllFilter FILTER = new AcceptAllFilter();
-	}
-	/**
-     * Opens a directory, returning a {@link DirectoryStream} to iterate over
-     * all entries in the directory. The elements returned by the directory
-     * stream's {@link DirectoryStream#iterator iterator} are of type {@code
-     * Path}, each one representing an entry in the directory. The {@code Path}
-     * objects are obtained as if by {@link Path#resolve(Path) resolving} the
-     * name of the directory entry against {@code dir}.
-     *
-     * <p> When not using the try-with-resources construct, then directory
-     * stream's {@code close} method should be invoked after iteration is
-     * completed so as to free any resources held for the open directory.
-     *
-     * <p> When an implementation supports operations on entries in the
-     * directory that execute in a race-free manner then the returned directory
-     * stream is a {@link SecureDirectoryStream}.
-     *
-     * @param   dir
-     *          the path to the directory
-     *
-     * @return  a new and open {@code DirectoryStream} object
-     *
-     * @throws  NotDirectoryException
-     *          if the file could not otherwise be opened because it is not
-     *          a directory <i>(optional specific exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          In the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-     *          method is invoked to check read access to the directory.
-     */
-    public static DirectoryStream<Path> newDirectoryStream(Path dir) throws IOException {
-    	return dir.getFileSystem().provider().newDirectoryStream(dir, AcceptAllFilter.FILTER);
+    public FileTMJ[] containingFiles(FileFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+    	return containingFilepathsStream(path->filter.accept(path.toFile()))
+    			.toArray(FileTMJ[]::new);
+    }
+    public FileTMJ[] containingPathFiles(DirectoryStream.Filter<Path> filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+    	return containingFilepathsStream(filter)
+    			.toArray(FileTMJ[]::new);
+    }
+    public FileTMJ[] containingFiles(DirectoryStream.Filter<FileTMJ> filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
+    	return containingFilepathsStream(path->filter.accept(new FileTMJ(path)))
+    			.toArray(FileTMJ[]::new);
+    }
+    public Stream<FileTMJ> containingFilesStream(FilenameFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+    	return containingFilepathsStream(path->filter.accept(path.toFile(), path.getFileName().toString()))
+    			.map(path->new FileTMJ(path));
+    }
+    public Stream<FileTMJ> containingFilesStream(FileFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+    	return containingFilepathsStream(path->filter.accept(path.toFile()))
+    			.map(path->new FileTMJ(path));
+    }
+    public Stream<FileTMJ> containingPathFilesStream(DirectoryStream.Filter<Path> filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+    	return containingFilepathsStream(filter)
+    			.map(path->new FileTMJ(path));
+    }
+    public Stream<FileTMJ> containingFilesStream(DirectoryStream.Filter<FileTMJ> filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
+    	return containingFilepathsStream(path->filter.accept(new FileTMJ(path)))
+    			.map(path->new FileTMJ(path));
     }
     /**
-     * Convert a Closeable to a Runnable by converting checked IOException
-     * to UncheckedIOException
-     */
-    private static Runnable asUncheckedRunnable(Closeable c) {
-        return () -> {
-            try {
-                c.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-    }
-    /**
-	 * From java.nio.file.Files.list
+     * From java.nio.file.Files.list
      * Return a lazily populated {@code Stream}, the elements of
      * which are the entries in the directory.  The listing is not recursive.
      *
@@ -515,210 +827,78 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          directory
      *
      * @throws  NotDirectoryException
-																																					 
+
      *          if the file is no directory <i>(optional specific exception)</i>
      * @throws  IOException
      *          if an I/O error occurs when opening the directory
      * @throws  SecurityException
-																																							
-																																									
+
+
      *          If a security manager denies read access to the directory.
      *
      * @see     #newDirectoryStream(Path)
      * @since   1.8
      */
+
+    private Stream<Path> containingFilepathsStream(DirectoryStream.Filter<Path> filter) throws NotDirectoryException,IOException,UncheckedIOException,SecurityException {
+    	/*
+    	 * From java.nio.file.Files.newDirectoryStream
+    	 * Opens a directory, returning a {@link DirectoryStream} to iterate over
+    	 * all entries in the directory. The elements returned by the directory
+    	 * stream's {@link DirectoryStream#iterator iterator} are of type {@code
+    	 * Path}, each one representing an entry in the directory. The {@code Path}
+    	 * objects are obtained as if by {@link Path#resolve(Path) resolving} the
+    	 * name of the directory entry against {@code dir}.
+    	 *
+    	 * <p> When not using the try-with-resources construct, then directory
+    	 * stream's {@code close} method should be invoked after iteration is
+    	 * completed so as to free any resources held for the open directory.
+    	 *
+    	 * <p> When an implementation supports operations on entries in the
+    	 * directory that execute in a race-free manner then the returned directory
+    	 * stream is a {@link SecureDirectoryStream}.
+    	 *
+    	 * @return  a new and open {@code DirectoryStream} object
+    	 *
+    	 * @throws  NotDirectoryException - if this FileTMJ object is not a directory <i>(optional specific exception)</i>
+    	 * @throws  IOException - if an I/O error occurs
+    	 * @throws  SecurityException - If a security manager denies read access to the directory.
+    	 */
+    	DirectoryStream<Path> directoryStream= dataForkPath.getFileSystem().provider().newDirectoryStream(dataForkPath, filter);
+    	final Iterator<Path> iterator = directoryStream.iterator();
+//    	// Re-wrap DirectoryIteratorException to UncheckedIOException
+//    	Iterator<Path> it = new Iterator<Path>() {
+//    		@Override
+//    		public boolean hasNext() {
+//    			try {
+//    				return iterator.hasNext();
+//    			} catch (DirectoryIteratorException e) {
+//    				throw new UncheckedIOException(e.getCause());
+//    			}
+//    		}
+//    		@Override
+//    		public Path next() {
+//    			try {
+//    				return iterator.next();
+//    			} catch (DirectoryIteratorException e) {
+//    				throw new UncheckedIOException(e.getCause());
+//    			}
+//    		}
+//    	};
+    	return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+//    			it
+    			iterator
+    			, Spliterator.DISTINCT), false).onClose( () -> {
+    				//From java.nio.file.Files: Convert a Closeable to a Runnable by converting checked IOException to UncheckedIOException
+    				try {
+    					directoryStream.close();
+    				} catch (IOException e) {
+    					throw new UncheckedIOException(e);
+    				}
+    			} );
+    }
+    
  
-//    public static Stream<Path> list(Path dir) throws IOException {
-//        DirectoryStream<Path> ds = java.nio.file.Files.newDirectoryStream(dir);
-//        try {
-//            final Iterator<Path> delegate = ds.iterator();
-//
-//            // Re-wrap DirectoryIteratorException to UncheckedIOException
-//            Iterator<Path> it = new Iterator<Path>() {
-//                @Override
-//                public boolean hasNext() {
-//                    try {
-//                        return delegate.hasNext();
-//                    } catch (DirectoryIteratorException e) {
-//                        throw new UncheckedIOException(e.getCause());
-//                    }
-//                }
-//                @Override
-//                public Path next() {
-//                    try {
-//                        return delegate.next();
-//                    } catch (DirectoryIteratorException e) {
-//                        throw new UncheckedIOException(e.getCause());
-//                    }
-//                }
-//            };
-//
-//            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
-//                                .onClose(asUncheckedRunnable(ds));
-//        } catch (Error|RuntimeException e) {
-//            try {
-//                ds.close();
-//            } catch (IOException ex) {
-//                try {
-//                    e.addSuppressed(ex);
-//                } catch (Throwable ignore) {}
-//            }
-//            throw e;
-//        }
-//    }
-	private Stream<Path> containingFilesStream() throws NotDirectoryException,IOException,UncheckedIOException,SecurityException {
-		 /**
-	     * Opens a directory, returning a {@link DirectoryStream} to iterate over
-	     * all entries in the directory. The elements returned by the directory
-	     * stream's {@link DirectoryStream#iterator iterator} are of type {@code
-	     * Path}, each one representing an entry in the directory. The {@code Path}
-	     * objects are obtained as if by {@link Path#resolve(Path) resolving} the
-	     * name of the directory entry against {@code dir}.
-	     *
-	     * <p> When not using the try-with-resources construct, then directory
-	     * stream's {@code close} method should be invoked after iteration is
-	     * completed so as to free any resources held for the open directory.
-	     *
-	     * <p> When an implementation supports operations on entries in the
-	     * directory that execute in a race-free manner then the returned directory
-	     * stream is a {@link SecureDirectoryStream}.
-	     *
-	     * @param   dir
-	     *          the path to the directory
-	     *
-	     * @return  a new and open {@code DirectoryStream} object
-	     *
-	     * @throws  NotDirectoryException
-	     *          if the file could not otherwise be opened because it is not
-	     *          a directory <i>(optional specific exception)</i>
-	     * @throws  IOException
-	     *          if an I/O error occurs
-	     * @throws  SecurityException
-	     *          In the case of the default provider, and a security manager is
-	     *          installed, the {@link SecurityManager#checkRead(String) checkRead}
-	     *          method is invoked to check read access to the directory.
-	     */
-//	    public static DirectoryStream<Path> newDirectoryStream(Path dir)
-//	        throws IOException
-//	    {
-		DirectoryStream	directoryStream= dataForkPath.getFileSystem().provider().newDirectoryStream(dataForkPath, AcceptAllFilter.FILTER);
-//	    }
-//		DirectoryStream<Path> directoryStream = java.nio.file.Files.newDirectoryStream(dataForkPath);
-//		try(DirectoryStream<Path> directoryStream = java.nio.file.Files.newDirectoryStream(dataForkPath);) {
-			final Iterator<Path> iterator = directoryStream.iterator();
-
-																																
-
-			// Re-wrap DirectoryIteratorException to UncheckedIOException
-			Iterator<Path> it = new Iterator<Path>() {
-				@Override
-				public boolean hasNext() {
-					try {
-						return iterator.hasNext();
-					} catch (DirectoryIteratorException e) {
-						throw new UncheckedIOException(e.getCause());
-					}
-				}
-				@Override
-				public Path next() {
-					try {
-						return iterator.next();
-					} catch (DirectoryIteratorException e) {
-						throw new UncheckedIOException(e.getCause());
-					}
-				}
-			};
-
-			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT), false)
-					.onClose( () -> {
-						//From java.nio.file.Files: Convert a Closeable to a Runnable by converting checked IOException to UncheckedIOException
-						try {
-							directoryStream.close();
-						} catch (IOException e) {
-							throw new UncheckedIOException(e);
-						}
-					} );
-	}
-    /**
-			 * Stream<Path> java.nio.file.Files.list(Path dir) throws IOException
-		Return a lazily populated Stream, the elements of which are the entries in the directory. The listing is not recursive.
-		The elements of the stream are Path objects that are obtained as if by resolving the name of the directory entry against dir. Some file systems maintain special links to the directory itself and the directory's parent directory. Entries representing these links are not included.
-		The stream is weakly consistent. It is thread safe but does not freeze the directory while iterating, so it may (or may not) reflect updates to the directory that occur after returning from this method.
-		The returned stream encapsulates a DirectoryStream. If timely disposal of file system resources is required, the try-with-resources construct should be used to ensure that the stream's close method is invoked after the stream operations are completed.
-		Operating on a closed stream behaves as if the end of stream has been reached. Due to read-ahead, one or more elements may be returned after the stream has been closed.
-		If an IOException is thrown when accessing the directory after this method has returned, it is wrapped in an UncheckedIOException which will be thrown from the method that caused the access to take place.
-		Parameters:
-		dir The path to the directory
-		Returns:
-		The Stream describing the content of the directory
-		Throws:
-		NotDirectoryException - if the file could not otherwise be opened because it is not a directory (optional specific exception)
-		IOException - if an I/O error occurs when opening the directory
-		SecurityException - In the case of the default provider, and a security manager is installed, the checkRead method is invoked to check read access to the directory.
-		Since:
-		1.8
-		See Also:
-		newDirectoryStream(Path)
-			 * @throws IOException,SecurityException,NotDirectoryException
-			 * 		NoSuchFileException - if this FileTMJ does not exist and so cannot contain anything
-			 */
-//			public Stream<FileTMJ> containingFilesStream() throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//				return java.nio.file.Files.list(dataForkPath).map(path->new FileTMJ(path));
-//			}
-	/**
-     * Returns an array of abstract pathnames denoting the files and
-     * directories in the directory denoted by this abstract pathname that
-     * satisfy the specified filter.  The behavior of this method is the same
-     * as that of the {@link #listFiles()} method, except that the pathnames in
-     * the returned array must satisfy the filter.  If the given {@code filter}
-     * is {@code null} then all pathnames are accepted.  Otherwise, a pathname
-     * satisfies the filter if and only if the value {@code true} results when
-     * the {@link FilenameFilter#accept
-     * FilenameFilter.accept(File,&nbsp;String)} method of the filter is
-     * invoked on this abstract pathname and the name of a file or directory in
-     * the directory that it denotes.
-     *
-     * @param  filter
-     *         A filename filter
-     *
-     * @return  An array of abstract pathnames denoting the files and
-     *          directories in the directory denoted by this abstract pathname.
-     *          The array will be empty if the directory is empty.  Returns
-     *          {@code null} if this abstract pathname does not denote a
-     *          directory, or if an I/O error occurs.
-     *
-     * @throws  SecurityException
-     *          If a security manager exists and its {@link
-     *          SecurityManager#checkRead(String)} method denies read access to
-     *          the directory
-     *
-     * @since  1.2
-     * @see java.nio.file.Files#newDirectoryStream(Path,String)
-     */
-//	public FileTMJ[] containingFiles(FilenameFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-//		return java.nio.file.Files.list(dataForkPath)
-//			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
-//			.toArray(FileTMJ[]::new);
-//	}
-//	public FileTMJ[] containingFiles(FileFilter filter) throws NotDirectoryException, NoSuchFileException, SecurityException, IOException {
-//		return containingFilesStream()
-//			.filter( path->filter.accept( path.toFile() ))
-//			.toArray(FileTMJ[]::new);
-//	}
-//	public Stream<FileTMJ> containingFilesStream(FilenameFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//		return java.nio.file.Files.list(dataForkPath)
-//			.filter(path->filter.accept(path.toFile(), path.getFileName().toString()))
-//			.map(path->new FileTMJ(path));
-//	}  
-//	public Stream<FileTMJ> containingFilesStream(FileFilter filter) throws IOException,SecurityException,NotDirectoryException,NoSuchFileException{
-//		return java.nio.file.Files.list(dataForkPath)
-//			.filter( path->filter.accept( path.toFile() ))
-//			.map(path->new FileTMJ(path));
-//	}
-	
-
-
-
   
     /**
      * Creates a directory by creating all nonexistent parent directories first.
@@ -761,67 +941,23 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      *          SecurityManager#chyyyyyyyyeckPropertyAccess(String) checkPropertyAccess}
      *          method to check access to the system property {@code user.dir}
      */
-	 /**
-     * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link #createDirectory createDirectory} method, an exception
-     * is not thrown if the directory could not be created because it already
-     * exists.
-     *
-     * <p> The {@code attrs} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the nonexistent
-     * directories. Each file attribute is identified by its {@link
-     * FileAttribute#name name}. If more than one attribute of the same name is
-     * included in the array then all but the last occurrence is ignored.
-     *
-     * <p> If this method fails, then it may do so after creating some, but not
-     * all, of the parent directories.
-     *
-     * @param   dir
-     *          the directory to create
-     *
-     * @param   attrs
-     *          an optional list of file attributes to set atomically when
-     *          creating the directory
-     *
-     * @return  the directory
-     *
-     * @throws  UnsupportedOperationException
-     *          if the array contains an attribute that cannot be set atomically
-     *          when creating the directory
-     * @throws  FileAlreadyExistsException
-     *          if {@code dir} exists but is not a directory <i>(optional specific
-     *          exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          in the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked prior to attempting to create a directory and
-     *          its {@link SecurityManager#checkRead(String) checkRead} is
-     *          invoked for each parent directory that is checked. If {@code
-     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
-     *          toAbsolutePath} may need to be invoked to get its absolute path.
-     *          This may invoke the security manager's {@link
-     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
-     *          method to check access to the system property {@code user.dir}
-     */
-    public boolean createDirectory(FileAttribute<?>... attributes) throws UnsupportedOperationException,FileAlreadyExistsException,IOException,SecurityException {
+	 public boolean createDirectory(FileAttribute<?>... attributes) throws UnsupportedOperationException,FileAlreadyExistsException,IOException,SecurityException,FileSystemException {
     	Path path;
     	// attempt to create the directory
     	try {
     		createAndCheckIsDirectory(dataForkPath, attributes);
     		path= dataForkPath;
-    	} catch (FileAlreadyExistsException x) {// file exists and is not a directory
-    		throw x;
-    	} catch (IOException x) {
+//    	} catch (FileAlreadyExistsException e) {// file exists and is not a directory
+//    		throw e;
+    	} catch (IOException e) {
     		// parent may not exist or other reason
     	}
     	SecurityException se = null;
     	try {
     		dataForkPath = dataForkPath.toAbsolutePath();
-    	} catch (SecurityException x) {
+    	} catch (SecurityException e) {
     		// don't have permission to get absolute path
-    		se = x;
+    		se = e;
     	}
     	// find a decendent that exists
     	Path parent = dataForkPath.getParent();
@@ -857,25 +993,48 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     	}
     	return false;
     }
-    /**
+	 /**
+	  * Creates a new directory.
      * Used by createDirectories to attempt to create a directory. A no-op
      * if the directory already exists.
-	 *
-     * @throws  SecurityException
-     *          If a security manager denies read access to the file.
-     */
-    private static void createAndCheckIsDirectory(Path path, FileAttribute<?>... attributes) throws IOException,SecurityException{
+	  * The check for the existence of the file and the
+     * creation of the directory if it does not exist are a single operation
+     * that is atomic with respect to all other filesystem activities that might
+     * affect the directory. The {@link #createDirectories createDirectories}
+     * method should be used where it is required to create all nonexistent
+     * parent directories first.
+     *
+     * <p> The {@code attributes} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the directory. Each
+     * attribute is identified by its {@link FileAttribute#name name}. If more
+     * than one attribute of the same name is included in the array then all but
+     * the last occurrence is ignored.
+     *
+     * @param   path
+     *          the directory to create
+     * @param   attributes
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the directory
+     *
+	  * @throws FileAlreadyExistsException - if a directory could not otherwise be created because a file of that name already exists (optional specific exception)
+	  * @throws UnsupportedOperationException - if the array contains an attribute that cannot be set atomically when creating the directory
+	  * @throws IOException - if an I/O error occurs or the parent directory does not exist
+	  * @throws SecurityException - In the case of the default provider, and a security manager is installed, the checkWrite method is invoked to check write access to the new directory.
+	  */
+    private static void createAndCheckIsDirectory(Path path, FileAttribute<?>... attributes) throws IOException,SecurityException,UnsupportedOperationException,FileAlreadyExistsException{
         try {
             path.getFileSystem().provider().createDirectory(path, attributes);
-        } catch (FileAlreadyExistsException x) {
+        } catch (FileAlreadyExistsException e) {
         	boolean isDirectory;
         	try {
         		isDirectory= readBasicFileAttributes(path, LinkOption.NOFOLLOW_LINKS).isDirectory();
-        	} catch (IOException e) {
+        	} catch (IOException ioe) {
         		isDirectory= false;
         	}
         	if(!isDirectory) {
-        		throw x;
+        		throw e;
         	}
         }
     }    
@@ -898,54 +1057,36 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * {@link java.nio.channels.FileLock FileLock}
      * facility should be used instead.
      *
-     * @param   attrs – optional list of file attributes
+     * @param   attributes – optional list of file attributes
      * @return  {@code true} if the file was successfully created, {@code false} if it already existed
      * @throws  UnsupportedOperationException – if the array contains an attribute that 
      *          cannot be set atomically when creating the file
      * @throws  IOException – if an I/O error occurs
      * @throws  SecurityException – if a security manager denies the write access
      */
-    public boolean createFileIfNotExists(FileAttribute<?>... attrs) throws IOException {
-    	try {
-    		FileTMJ file=getParent();
-    		if(null!=file) {
-    			file.createDirectory(attrs);
-    		}
-    		// from java.nio.file.Files:
-    		getFileSystem().provider().newByteChannel(
-    			dataForkPath
-    			, EnumSet.<StandardOpenOption>of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
-    			, attrs
-    		).close();
-    		return true;
-    	}catch(FileAlreadyExistsException e) {
-    		return false;
-    	}
+    public boolean createFileIfNotExists(FileAttribute<?>... attributes) throws IOException {
+    	throw new RuntimeException("Method not implemented, yet!"); //TODO IMPLEMENT!
+//    	try {
+//    		FileTMJ file=getParent();
+//    		if(null!=file) {
+//    			file.createDirectory(attributes);//TODO
+//    		}
+//    		// from java.nio.file.Files:
+//    		getFileSystem().provider().newByteChannel(
+//    			dataForkPath
+//    			, EnumSet.<StandardOpenOption>of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+//    			, attributes
+//    		).close();
+//    		return true;
+//    	}catch(FileAlreadyExistsException e) {
+//    		return false;
+//    	}
     }
 
     
     
     
-    /**
-     * Tests whether this file/directory exists.
-     *
-     * @return  <code>true</code> if and only if the file or directory denoted
-     *          by this abstract pathname exists; <code>false</code> otherwise
-     *
-     * @throws  SecurityException
-     *          If a security manager exists and its <code>{@link
-     *          java.lang.SecurityManager#checkRead(java.lang.String)}</code>
-     *          method denies read access to the file or directory
-     */
-//        SecurityManager security = System.getSecurityManager();
-//        if (security != null) {
-//            security.checkRead(path);
-//        }
-//        if (isInvalid()) {
-//            return false;
-//        }
-//        return ((fs.getBooleanAttributes(this) & FileSystem.BA_EXISTS) != 0);
-    /**
+   /**
      * Tests whether the file/directory exists.
      * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
      * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
@@ -970,7 +1111,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     }
     public boolean exists(LinkOption... linkOptions) throws SecurityException{
 		try {
-			readBasicFileAttributes(dataForkPath, linkOptions); // file exists
+			readBasicFileAttributes(linkOptions); // file exists
 			return true;
 		} catch (IOException e) { // does not exist or unable to determine if file exists
 			try {
@@ -1059,11 +1200,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 		return dataForkPath.getFileName().toString();// root -> null
 //		return dataForkPath.toFile().getName();//root -> ""
 	}
-  /**
-   * @return  The name of the file or directory denoted by this abstract
-   *          pathname, or the empty string if this pathname's name sequence
-   *          is empty
-   */
 
 	  /**
 	   * Returns the file system that created this file/directory.
@@ -1072,7 +1208,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	   * @return  the file system that created this object or null if the object does not exist.
 	   */
 	  public FileSystem getFileSystem(){
-		  return fileSystem;
+		  return nioFileSystem;//TODO
 		}
 	  
   public static FileTMJ getHome() {
@@ -1135,25 +1271,6 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 //  return path.substring(0, index);
 	}
 	
-	/**
-   * Ignores the macOS Fork-Duality.
-   * Returns a {@link Path} representing this file's path. The resulting path is associated with the
-   * {@link java.nio.file.FileSystems#getDefault default-filesystem}.
-   * The resulting
-   * string uses the {@link #separator default name-separator character} to
-   * separate the names in the name sequence.
-   *
-   * @return  The string form of this abstract pathname
-   * @throws  java.nio.file.InvalidPathException
-   *          if a {@code Path} object cannot be constructed from the abstract
-   *          file (see {@link java.nio.file.FileSystem#getPath FileSystem.getPath})
-   */
-  public Path getPath() {
-	  return dataForkPath;
-  }
-  public String getPathString() {
-	  return dataForkPath.toString();
-  }
 
   /**
 	 * Returns the number of elements in this file's path.
@@ -1202,29 +1319,17 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	}
 
 	  /**
-	   * Tells whether or not this path is absolute.
-	   *
+	   * Tests whether this abstract pathname is absolute.
+	   * 
 	   * <p> An absolute path is complete in that it doesn't need to be combined
 	   * with other path information in order to locate a file.
-	   *
-	   * @return  {@code true} if, and only if, this path is absolute
-	   */
-	  /**
-	   * Tests whether this abstract pathname is absolute.  The definition of
-	   * absolute pathname is system dependent.  On UNIX systems, a pathname is
+	   * On UNIX systems, a pathname is
 	   * absolute if its prefix is <code>"/"</code>.  On Microsoft Windows systems, a
 	   * pathname is absolute if its prefix is a drive specifier followed by
 	   * <code>"\\"</code>, or if its prefix is <code>"\\\\"</code>.
 	   *
-	   * @return  <code>true</code> if this abstract pathname is absolute,
-	   *          <code>false</code> otherwise
-	   */
-	  /**
-	   * Tells whether or not this URI is absolute.
-	   *
-	   * <p> A URI is absolute if, and only if, it has a scheme component. </p>
-	   *
-	   * @return  {@code true} if, and only if, this URI is absolute
+	   * @return  {@code true} if this abstract pathname is absolute,
+	   *          {@code false} otherwise
 	   */
 	  public boolean isAbsolute() {
 		  return dataForkPath.isAbsolute();
@@ -1249,22 +1354,23 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @return  {@code true} if the file an existing directory,
      *          {@code false} otherwise
      *
+     * @throws  IOException
      * @throws  SecurityException
      *          If a security manager denies read access to the file
      */
-	public boolean isDirectory() {
+	public boolean isDirectory() throws IOException,SecurityException {
 		return isDirectory(LinkOption.NOFOLLOW_LINKS);
 	}
-	public boolean isDirectory(LinkOption... linkOptions) {
-//		return java.nio.file.Files.isDirectory(dataForkPath, linkOptions);
-        try {
-        	return readBasicFileAttributes(dataForkPath, linkOptions).isDirectory();
-        } catch (IOException ioe) {
-            return false;
-        }
+	public boolean isDirectory(LinkOption... linkOptions) throws IOException,SecurityException {
+//		From java.nio.file.Files.isDirectory
+//        try {
+        	return readBasicFileAttributes(linkOptions).isDirectory();
+//        } catch (IOException ioe) {
+//            return false;
+//        }
     }
 
-	public boolean isEmpty() throws SecurityException, IOException {
+	public boolean isEmpty() throws SecurityException, FileNotFoundException {
 		return 0==sizeBytes();
 	}
     
@@ -1302,16 +1408,16 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 	}
 	
     /**
-     * Tests whether the object is an existing directory.
+     * Tests whether the object is an existing regular file.
      * The {@code options} parameter may be used to indicate how symbolic links are handled for the case that the file is a symbolic link.
      * By default, symbolic links are not followed but treated as itself. If option is provided without {@link LinkOption#NOFOLLOW_LINKS
      * NOFOLLOW_LINKS} then symbolic links are followed.
-     *
-     * <p> Where it is required to distinguish an I/O exception from the case
-     * that the file is not a regular file then the file attributes can be
-     * read with the {@link #readAttributes(Path,Class,LinkOption[])
-     * readAttributes} method and the file type tested with the {@link
-     * BasicFileAttributes#isRegularFile} method.
+//     *
+//     * <p> Where it is required to distinguish an I/O exception from the case
+//     * that the file is not a regular file then the file attributes can be
+//     * read with the {@link #readAttributes(Path,Class,LinkOption[])
+//     * readAttributes} method and the file type tested with the {@link
+//     * BasicFileAttributes#isRegularFile} method.
      *
      * @param   options
      *          options indicating how symbolic links are handled
@@ -1319,19 +1425,20 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * @return  {@code true} if the file an existing regular file,
      *          {@code false} otherwise
      *
+     * @throws  IOException
      * @throws  SecurityException
      *          If a security manager denies read access to the file
      */
-	public boolean isRegularFile() {
+	public boolean isRegularFile() throws IOException,SecurityException{
 		return isRegularFile(LinkOption.NOFOLLOW_LINKS);
 	}
-	public boolean isRegularFile(LinkOption... linkOptions) {
+	public boolean isRegularFile(LinkOption... linkOptions) throws IOException,SecurityException{
 //		return java.nio.file.Files.isRegularFile(dataForkPath, linkOptions);
-        try {
-        	return readBasicFileAttributes(dataForkPath, linkOptions).isRegularFile();
-        } catch (IOException ioe) {
-            return false;
-        }
+//        try {
+        	return readBasicFileAttributes(linkOptions).isRegularFile();
+//        } catch (IOException e) {
+//            return false;
+//        }
     }
    
     /**
@@ -1357,7 +1464,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      */
     public boolean isSymbolicLink() {
         try {
-        	return readBasicFileAttributes(dataForkPath,LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
+        	return readBasicFileAttributes(LinkOption.NOFOLLOW_LINKS).isSymbolicLink();
         } catch (IOException ioe) {
             return false;
         }
@@ -1875,14 +1982,12 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
      * 
 	 * @return size in bytes, unspecified if directory
 	 * @throws SecurityException - If a security manager exists and its java.lang.SecurityManager.checkRead(java.lang.String) method denies read access to the file
-	 * @throws IOException - if an I/O error occurs
-	 * 
-	 * long java.nio.file.Files.size(Path path) throws IOException
+	 * @throws FileNotFoundException - if the file could not be found.
 	 */
-	public long sizeBytes() throws SecurityException, IOException{
+	public long sizeBytes() throws SecurityException, FileNotFoundException{
 		return sizeBytes(LinkOption.NOFOLLOW_LINKS);
 	}
-	public long sizeBytes(LinkOption...linkOptions) throws SecurityException, IOException{
+	public long sizeBytes(LinkOption...linkOptions) throws SecurityException, FileNotFoundException{
 		long dataSize=0;
 		long resourceSize=0;
 //		if(!exists(linkOptions)){
@@ -1890,7 +1995,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 			// java.nio.file.Files.exists tries to read file attributes and interpretes an error as not-exists!
 			// So we don't need that separated.
 			try {
-				dataSize=readBasicFileAttributes(dataForkPath, linkOptions).size(); // file exists
+				dataSize=readBasicFileAttributes(linkOptions).size(); // file exists
 			} catch (IOException e2) { // does not exist or unable to determine if file exists
 				dataSize=-1;
 			}
@@ -2053,7 +2158,7 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
  */
   public Path toCanonicalPath() throws IOException {
 //	  return Paths.get(toCanonicalPathString());
-	  return fileSystem.getPath(toCanonicalPathString());
+	  return nioFileSystem.getPath(toCanonicalPathString());
 //    if (isInvalid()) {
 //        throw new IOException("Invalid file path");
 //    }
@@ -2148,13 +2253,25 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
   }
 
   /**
-   * ignores the duality of the macOS forks.
-   * @return
+   * Ignores the macOS Fork-Duality.
+   * Returns a {@link Path} representing this file's path. The resulting path is associated with the
+   * {@link java.nio.file.FileSystems#getDefault default-filesystem}.
+   * The resulting
+   * string uses the {@link #separator default name-separator character} to
+   * separate the names in the name sequence.
+   *
+   * @return  The string form of this abstract pathname
+   * @throws  java.nio.file.InvalidPathException
+   *          if a {@code Path} object cannot be constructed from the abstract
+   *          file (see {@link java.nio.file.FileSystem#getPath FileSystem.getPath})
    */
-	public Path toPath() {
-		return dataForkPath;
-	}
-
+  public Path toPath() {
+	  return dataForkPath;
+  }
+  public String toPathString() {
+	  return dataForkPath.toString();
+  }
+	  
   /**
    * Returns the <em>real</em> path of an existing file.
    *
@@ -2793,128 +2910,128 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
 
     
     
-    /** Read the given binary file, and return its contents as a byte array.*/ 
-    byte[] readAlternateImpl(String inputFileName){
-      log("Reading in binary file named : " + inputFileName);
-      File file = new File(inputFileName);
-      log("File size: " + file.length());
-      byte[] result = null;
-      try {
-        InputStream input =  new BufferedInputStream(new FileInputStream(file));
-        result = readAndClose(input);
-      }
-      catch (FileNotFoundException ex){
-        log(ex);
-      }
-      return result;
-    }
+//    /** Read the given binary file, and return its contents as a byte array.*/ 
+//    private byte[] readAlternateImpl(String inputFileName){
+//      log("Reading in binary file named : " + inputFileName);
+//      File file = new File(inputFileName);
+//      log("File size: " + file.length());
+//      byte[] result = null;
+//      try {
+//        InputStream input =  new BufferedInputStream(new FileInputStream(file));
+//        result = readAndClose(input);
+//      }
+//      catch (FileNotFoundException ex){
+//        log(ex);
+//      }
+//      return result;
+//    }
     
-    /**
-     Read an input stream, and return it as a byte array.  
-     Sometimes the source of bytes is an input stream instead of a file. 
-     This implementation closes aInput after it's read.
-    */
-    byte[] readAndClose(InputStream input){
-      //carries the data from input to output :    
-      byte[] bucket = new byte[32*1024]; 
-      ByteArrayOutputStream result = null; 
-      try  {
-        try {
-          //Use buffering? No. Buffering avoids costly access to disk or network;
-          //buffering to an in-memory stream makes no sense.
-          result = new ByteArrayOutputStream(bucket.length);
-          int bytesRead = 0;
-          while(bytesRead != -1){
-            //aInput.read() returns -1, 0, or more :
-            bytesRead = input.read(bucket);
-            if(bytesRead > 0){
-              result.write(bucket, 0, bytesRead);
-            }
-          }
-        }
-        finally {
-          input.close();
-          //result.close(); this is a no-operation for ByteArrayOutputStream
-        }
-      }
-      catch (IOException ex){
-        log(ex);
-      }
-      return result.toByteArray();
-    }
+//    /**
+//     Read an input stream, and return it as a byte array.  
+//     Sometimes the source of bytes is an input stream instead of a file. 
+//     This implementation closes aInput after it's read.
+//    */
+//    private byte[] readAndClose(InputStream input){
+//      //carries the data from input to output :    
+//      byte[] bucket = new byte[32*1024]; 
+//      ByteArrayOutputStream result = null; 
+//      try  {
+//        try {
+//          //Use buffering? No. Buffering avoids costly access to disk or network;
+//          //buffering to an in-memory stream makes no sense.
+//          result = new ByteArrayOutputStream(bucket.length);
+//          int bytesRead = 0;
+//          while(bytesRead != -1){
+//            //aInput.read() returns -1, 0, or more :
+//            bytesRead = input.read(bucket);
+//            if(bytesRead > 0){
+//              result.write(bucket, 0, bytesRead);
+//            }
+//          }
+//        }
+//        finally {
+//          input.close();
+//          //result.close(); this is a no-operation for ByteArrayOutputStream
+//        }
+//      }
+//      catch (IOException ex){
+//        log(ex);
+//      }
+//      return result.toByteArray();
+//    }
   
 
 
     
-    public byte[] readDataFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-//    	if(!exists()) {
-//    		throw new FileNotFoundException(dataForkPath+" does not exist!");
+//    private byte[] readDataFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+////    	if(!exists()) {
+////    		throw new FileNotFoundException(dataForkPath+" does not exist!");
+////    	}
+//    	if(!hasDataFork()) {
+//    		return null;
 //    	}
-    	if(!hasDataFork()) {
-    		return null;
-    	}
-    	return readFork(dataForkPath, options);
-    }
-    public byte[] readResourceFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-    	if(!hasResourceFork()) {
-    		return null;
-    	}
-    	return readFork(resourceForkPath, options);
-    }
-    /** Read the given binary file, and return its contents as a byte array.
-     * @throws IOException */ 
-    private byte[] readFork(Path path, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-    	int len=(int)readBasicFileAttributes(path).size();
-        byte[] result = new byte[len];//TODO unchecked casting?!
-    	int totalBytesRead = 0;
-    	try( InputStream inputStream=new BufferedInputStream(path.getFileSystem().provider().newInputStream(path, options)) ){
-    		while(totalBytesRead < result.length){
-    			int bytesRemaining = result.length - totalBytesRead;
-    			//bufferedInputStream.read() returns -1, 0, or more :
-    			  int bytesRead = inputStream.read(result, totalBytesRead, bytesRemaining); 
-    			  if (bytesRead > 0){
-    				  totalBytesRead = totalBytesRead + bytesRead;
-    			  }
-    		  }
-    			  /* the above style is a bit tricky: it places bytes into the 'result' array; 
-                   'result' is an output parameter; the while loop usually has a single iteration only.   */
-//    			  log("Num bytes read: " + totalBytesRead);
-    	  }catch(RuntimeException e) {
-//    	  catch (FileNotFoundException ex) {
-//    			 Throws:IllegalArgumentException - if an invalid combination of options is specified
-//    		  UnsupportedOperationException - if an unsupported option is specified
-//    		  IOException - if an I/O error occurs
-//    		  SecurityException - If a security manager denies access to the file.
-    	  }
-    		  return result;
-      }
+//    	return readFork(dataForkPath, options);
+//    }
+//    private byte[] readResourceFork(LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+//    	if(!hasResourceFork()) {
+//    		return null;
+//    	}
+//    	return readFork(resourceForkPath, options);
+//    }
+//    /** Read the given binary file, and return its contents as a byte array.
+//     * @throws IOException */ 
+//    private byte[] readFork(Path path, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+//    	int len=(int)readBasicFileAttributes(path).size();
+//        byte[] result = new byte[len];//TODO unchecked casting?!
+//    	int totalBytesRead = 0;
+//    	try( InputStream inputStream=new BufferedInputStream(path.getFileSystem().provider().newInputStream(path, options)) ){
+//    		while(totalBytesRead < result.length){
+//    			int bytesRemaining = result.length - totalBytesRead;
+//    			//bufferedInputStream.read() returns -1, 0, or more :
+//    			  int bytesRead = inputStream.read(result, totalBytesRead, bytesRemaining); 
+//    			  if (bytesRead > 0){
+//    				  totalBytesRead = totalBytesRead + bytesRead;
+//    			  }
+//    		  }
+//    			  /* the above style is a bit tricky: it places bytes into the 'result' array; 
+//                   'result' is an output parameter; the while loop usually has a single iteration only.   */
+////    			  log("Num bytes read: " + totalBytesRead);
+//    	  }catch(RuntimeException e) {
+////    	  catch (FileNotFoundException ex) {
+////    			 Throws:IllegalArgumentException - if an invalid combination of options is specified
+////    		  UnsupportedOperationException - if an unsupported option is specified
+////    		  IOException - if an I/O error occurs
+////    		  SecurityException - If a security manager denies access to the file.
+//    	  }
+//    		  return result;
+//      }
     
-    private byte[] readForkAsBytesIntern(Path path,int maxBytes, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
-    	try( InputStream inputStream=new BufferedInputStream(path.getFileSystem().provider().newInputStream(path, options)) ){
-			if(0==maxBytes) {
-				maxBytes=(int) readBasicFileAttributes(path).size();//// TODO works with small files, only?
-			}
-			byte[] fileBytes = new byte[maxBytes]; 
-			
-//			(java.nio.file.Files.readAllBytes())
-			
-			inputStream.read(fileBytes);
-			return fileBytes;
-			
-//			//Allocate buffer with 4byte = 32bit = Integer.SIZE
-//			int bytesRead;
-//			while ((bytesRead = inputStream.read(fileBytes)) != -1){
-//			   //if bytesRead == 4 you read 1 int
-//			   //do your stuff
+//    private byte[] readForkAsBytesIntern(Path path,int maxBytes, LinkOption... options) throws FileNotFoundException,IllegalArgumentException,SecurityException,UnsupportedOperationException,IOException{
+//    	try( InputStream inputStream=new BufferedInputStream(path.getFileSystem().provider().newInputStream(path, options)) ){
+//			if(0==maxBytes) {
+//				maxBytes=(int) readBasicFileAttributes(path).size();//// TODO works with small files, only?
 //			}
-			
-		} catch (FileNotFoundException e) {
-//			Logger.error(ErrorSet.fileNotFoundX(),file);
-		} catch (IOException e) {
-//			Logger.error(ErrorSet.couldNotAccessFile(),file);
-		}
-		return null;
-	}
+//			byte[] fileBytes = new byte[maxBytes]; 
+//			
+////			(java.nio.file.Files.readAllBytes())
+//			
+//			inputStream.read(fileBytes);
+//			return fileBytes;
+//			
+////			//Allocate buffer with 4byte = 32bit = Integer.SIZE
+////			int bytesRead;
+////			while ((bytesRead = inputStream.read(fileBytes)) != -1){
+////			   //if bytesRead == 4 you read 1 int
+////			   //do your stuff
+////			}
+//			
+//		} catch (FileNotFoundException e) {
+////			Logger.error(ErrorSet.fileNotFoundX(),file);
+//		} catch (IOException e) {
+////			Logger.error(ErrorSet.couldNotAccessFile(),file);
+//		}
+//		return null;
+//	}
       
     
 
@@ -2928,34 +3045,34 @@ public class FileTMJ implements Iterable<Path>, Comparable<FileTMJ>, Serializabl
     
     
     
-      /**
-       Write a byte array to the given file. 
-       Writing binary data is significantly simpler than reading it. 
-      */
-      void write(byte[] input, String outputFileName){
-        log("Writing binary file...");
-        try {
-          OutputStream output = null;
-          try {
-            output = new BufferedOutputStream(new FileOutputStream(outputFileName));
-            output.write(input);
-          }
-          finally {
-            output.close();
-          }
-        }
-        catch(FileNotFoundException ex){
-          log("File not found.");
-        }
-        catch(IOException ex){
-          log(ex);
-        }
-      }
-      
-      private static void log(Object thing){
-        System.out.println(String.valueOf(thing));
-      }
-//    } 
+//      /**
+//       Write a byte array to the given file. 
+//       Writing binary data is significantly simpler than reading it. 
+//      */
+//     private void write(byte[] input, String outputFileName){
+//        log("Writing binary file...");
+//        try {
+//          OutputStream output = null;
+//          try {
+//            output = new BufferedOutputStream(new FileOutputStream(outputFileName));
+//            output.write(input);
+//          }
+//          finally {
+//            output.close();
+//          }
+//        }
+//        catch(FileNotFoundException ex){
+//          log("File not found.");
+//        }
+//        catch(IOException ex){
+//          log(ex);
+//        }
+//      }
+//      
+//      private static void log(Object thing){
+//        System.out.println(String.valueOf(thing));
+//      }
+////    } 
     
     
     
